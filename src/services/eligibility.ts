@@ -23,8 +23,8 @@ export function adherenceWeight(adherence: number): EligibilityResult {
 
 export function reputationWeight(reputation?: number): number {
   if (!env.ENABLE_REPUTATION_WEIGHTING || reputation === undefined) return 1;
-  if (reputation >= 0.8) return 1.2;
-  if (reputation >= 0.6) return 1;
-  if (reputation >= 0.4) return 0.8;
-  return 0.5;
+  if (reputation >= env.REPUTATION_FULL_WEIGHT_THRESHOLD) return env.REPUTATION_FULL_WEIGHT;
+  if (reputation >= env.REPUTATION_STANDARD_WEIGHT_THRESHOLD) return env.REPUTATION_STANDARD_WEIGHT;
+  if (reputation >= env.REPUTATION_DOWN_WEIGHT_THRESHOLD) return env.REPUTATION_DOWN_WEIGHT;
+  return env.REPUTATION_MIN_WEIGHT;
 }

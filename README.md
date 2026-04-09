@@ -47,6 +47,13 @@ Key flags:
 - `ENABLE_REPUTATION_WEIGHTING` (default `true`)
 - `MIN_ADHERENCE_FOR_VALID_RUN` (default `50`)
 - `FULL_WEIGHT_ADHERENCE_THRESHOLD` (default `70`)
+- `REPUTATION_FULL_WEIGHT_THRESHOLD` (default `0.8`)
+- `REPUTATION_STANDARD_WEIGHT_THRESHOLD` (default `0.6`)
+- `REPUTATION_DOWN_WEIGHT_THRESHOLD` (default `0.4`)
+- `REPUTATION_FULL_WEIGHT` (default `1.2`)
+- `REPUTATION_STANDARD_WEIGHT` (default `1`)
+- `REPUTATION_DOWN_WEIGHT` (default `0.8`)
+- `REPUTATION_MIN_WEIGHT` (default `0.5`)
 - `PRIVACY_MODE_STRICT` (default `true`)
 
 ## Data integrity + privacy rules encoded

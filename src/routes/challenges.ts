@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Request, Response, Router } from "express";
 import { z } from "zod";
 import { env } from "../config/env";
 import { store } from "../data/store";
@@ -9,11 +9,11 @@ const joinSchema = z.object({
 
 export const challengesRouter = Router();
 
-challengesRouter.get("/", (_req, res) => {
+challengesRouter.get("/", (_req: Request, res: Response) => {
   res.json({ challenges: store.challenges });
 });
 
-challengesRouter.post("/:id/join", (req, res) => {
+challengesRouter.post("/:id/join", (req: Request, res: Response) => {
   if (!env.ENABLE_CHALLENGES) {
     return res.status(503).json({ error: "challenges_disabled" });
   }

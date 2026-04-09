@@ -1,6 +1,8 @@
 import { v4 as uuid } from "uuid";
 import { Challenge, Contributor, OutcomeLog, Protocol } from "../types";
 
+// TODO: Replace with canonical database + persistence layer; this store is scaffold-only.
+
 const contributors: Contributor[] = [
   {
     id: "c-real-001",

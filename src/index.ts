@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import { env } from "./config/env";
 import { healthRouter } from "./routes/health";
 import { protocolsRouter } from "./routes/protocols";
@@ -14,14 +14,14 @@ app.use("/protocols", protocolsRouter);
 app.use("/challenges", challengesRouter);
 app.use("/outcomes", outcomesRouter);
 
-app.get("/", (_req, res) => {
+app.get("/", (_req: Request, res: Response) => {
   res.json({
     message: "Phyto.ai API scaffold",
     routes: ["/health", "/protocols", "/challenges", "/outcomes"],
   });
 });
 
-app.use((req, res) => {
+app.use((req: Request, res: Response) => {
   res.status(404).json({ error: "not_found", path: req.path });
 });
 
