@@ -1,0 +1,11 @@
+# terraform.tfvars.example
+
+azure_subscription_id = "REPLACE_ME"
+azure_tenant_id       = "REPLACE_ME"
+azure_location        = "canadacentral"
+
+resource_group_name   = "phyto-dev-rg"
+app_service_name      = "phyto-app"
+postgres_server_name  = "phyto-postgres"
+storage_account_name  = "phytostorage"
+key_vault_name        = "phyto-keyvault"
