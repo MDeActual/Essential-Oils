@@ -1,4 +1,5 @@
 export type DataOrigin = "real_contributor" | "synthetic" | "internal_test";
+export type Role = "contributor" | "practitioner" | "researcher" | "admin";
 
 export interface Contributor {
   id: string;
@@ -32,6 +33,13 @@ export interface Challenge {
   description: string;
   protocolId: string;
   durationDays: number;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  role: Role;
+  contributorId?: string;
 }
 
 export interface OutcomeLog {

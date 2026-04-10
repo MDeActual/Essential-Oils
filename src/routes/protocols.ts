@@ -1,8 +1,9 @@
 import { Request, Response, Router } from "express";
-import { store } from "../data/store";
+import { protocolRepository } from "../repositories/protocolRepository";
 
 export const protocolsRouter = Router();
 
-protocolsRouter.get("/", (_req: Request, res: Response) => {
-  res.json({ protocols: store.protocols });
+protocolsRouter.get("/", async (_req: Request, res: Response) => {
+  const protocols = await protocolRepository.list();
+  res.json({ protocols });
 });

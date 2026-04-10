@@ -15,6 +15,14 @@ npm run build
 npm start
 ```
 
+### Database (PostgreSQL + Prisma)
+
+1. Set `DATABASE_URL` and `JWT_SECRET` in `.env` (see env section).
+2. Generate Prisma client: `npm run prisma:generate`
+3. Apply schema (dev): `npm run prisma:migrate` (requires PostgreSQL reachable at `DATABASE_URL`)
+
+Prisma schema lives in `prisma/schema.prisma`; generated client in `src/generated/prisma`.
+
 ## API scaffold
 
 - `GET /health` – service status
@@ -33,6 +41,10 @@ npm start
     "dataOrigin": "real_contributor"
   }
   ```
+- `POST /auth/register` / `POST /auth/login` – JWT issuance; roles: contributor, practitioner, researcher, admin
+- `GET /analytics/*` – protected analytics (challenge stats, protocol effectiveness, adherence, geo aggregates)
+- `GET /dashboard/*` – protected dashboards (contributor, admin metrics, practitioner insights)
+- `POST /integrations/*` – protected placeholders for health apps, wearables, protocol imports
 
 ## Configuration
 
@@ -40,6 +52,9 @@ Environment variables align with `docs/secrets_and_env_spec.md` and `docs/SWARM_
 
 Key flags:
 
+- `DATABASE_URL` (PostgreSQL connection string)
+- `JWT_SECRET` (required)
+- `JWT_EXPIRES_IN` (default `1h`)
 - `APP_ENV` (`development|staging|production`)
 - `ENABLE_SYNTHETIC_DATA` (default `false`)
 - `ALLOW_PRODUCTION_INSIGHTS_FROM_REAL_ONLY` (default `true`)

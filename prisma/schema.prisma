@@ -1,0 +1,95 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum DataOrigin {
+  real_contributor
+  synthetic
+  internal_test
+}
+
+enum Role {
+  contributor
+  practitioner
+  researcher
+  admin
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String
+  role          Role
+  contributorId String? @unique
+  contributor   Contributor? @relation(fields: [contributorId], references: [id])
+  createdAt     DateTime @default(now())
+}
+
+model Contributor {
+  id              String    @id @default(uuid())
+  name            String
+  region          String?
+  dataOrigin      DataOrigin
+  reputationScore Float?
+  createdAt       DateTime  @default(now())
+  user            User?
+  outcomes        Outcome[]
+  participants    ChallengeParticipant[]
+}
+
+model Protocol {
+  id              String    @id @default(uuid())
+  title           String
+  version         String
+  category        String?
+  recommendedFor  String[]
+  steps           Json
+  createdAt       DateTime  @default(now())
+  challenges      Challenge[]
+  outcomes        Outcome[]
+}
+
+model Challenge {
+  id           String    @id @default(uuid())
+  name         String
+  description  String
+  protocolId   String
+  durationDays Int
+  createdAt    DateTime  @default(now())
+  protocol     Protocol  @relation(fields: [protocolId], references: [id])
+  outcomes     Outcome[]
+  participants ChallengeParticipant[]
+}
+
+model ChallengeParticipant {
+  id            String       @id @default(uuid())
+  challengeId   String
+  contributorId String
+  joinedAt      DateTime     @default(now())
+  challenge     Challenge    @relation(fields: [challengeId], references: [id])
+  contributor   Contributor  @relation(fields: [contributorId], references: [id])
+}
+
+model Outcome {
+  id            String      @id @default(uuid())
+  contributorId String
+  challengeId   String
+  protocolId    String
+  adherence     Int
+  signals       Json
+  dataOrigin    DataOrigin
+  createdAt     DateTime    @default(now())
+  contributor   Contributor @relation(fields: [contributorId], references: [id])
+  challenge     Challenge   @relation(fields: [challengeId], references: [id])
+  protocol      Protocol    @relation(fields: [protocolId], references: [id])
+}

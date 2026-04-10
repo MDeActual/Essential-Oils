@@ -1,7 +1,10 @@
 import { Request, Response, Router } from "express";
 import { z } from "zod";
 import { env } from "../config/env";
-import { store } from "../data/store";
+import { contributorRepository } from "../repositories/contributorRepository";
+import { challengeRepository } from "../repositories/challengeRepository";
+import { protocolRepository } from "../repositories/protocolRepository";
+import { outcomeRepository } from "../repositories/outcomeRepository";
 import { adherenceWeight, canUseForDiscovery, reputationWeight } from "../services/eligibility";
 
 const outcomeSchema = z.object({
@@ -14,7 +17,7 @@ const outcomeSchema = z.object({
 
 export const outcomesRouter = Router();
 
-outcomesRouter.post("/", (req: Request, res: Response) => {
+outcomesRouter.post("/", async (req: Request, res: Response) => {
   const parsed = outcomeSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: "invalid_request", details: parsed.error.format() });
@@ -22,7 +25,7 @@ outcomesRouter.post("/", (req: Request, res: Response) => {
 
   const { contributorId, challengeId, protocolId, adherence, signals } = parsed.data;
 
-  const contributor = store.contributors.find((c) => c.id === contributorId);
+  const contributor = await contributorRepository.getById(contributorId);
   if (!contributor) {
     return res.status(404).json({ error: "contributor_not_found" });
   }
@@ -33,12 +36,12 @@ outcomesRouter.post("/", (req: Request, res: Response) => {
     return res.status(403).json({ error: "synthetic_disabled" });
   }
 
-  const challenge = store.challenges.find((c) => c.id === challengeId);
+  const challenge = await challengeRepository.getById(challengeId);
   if (!challenge) {
     return res.status(404).json({ error: "challenge_not_found" });
   }
 
-  const protocol = store.protocols.find((p) => p.id === protocolId);
+  const protocol = await protocolRepository.getById(protocolId);
   if (!protocol) {
     return res.status(404).json({ error: "protocol_not_found" });
   }
@@ -52,7 +55,7 @@ outcomesRouter.post("/", (req: Request, res: Response) => {
     return res.status(422).json({ error: adherenceResult.reason });
   }
 
-  const log = store.addOutcome({
+  const log = await outcomeRepository.create({
     contributorId,
     challengeId,
     protocolId,
@@ -61,7 +64,7 @@ outcomesRouter.post("/", (req: Request, res: Response) => {
     dataOrigin,
   });
 
-  const reputation = reputationWeight(contributor.reputationScore);
+  const reputation = reputationWeight(contributor.reputationScore ?? undefined);
   const discoveryEligible =
     dataOrigin === "real_contributor" ||
     (env.ENABLE_SYNTHETIC_DATA && canUseForDiscovery(dataOrigin));

@@ -1,7 +1,8 @@
 import { Request, Response, Router } from "express";
 import { z } from "zod";
 import { env } from "../config/env";
-import { store } from "../data/store";
+import { challengeRepository } from "../repositories/challengeRepository";
+import { contributorRepository } from "../repositories/contributorRepository";
 
 const joinSchema = z.object({
   contributorId: z.string(),
@@ -9,11 +10,12 @@ const joinSchema = z.object({
 
 export const challengesRouter = Router();
 
-challengesRouter.get("/", (_req: Request, res: Response) => {
-  res.json({ challenges: store.challenges });
+challengesRouter.get("/", async (_req: Request, res: Response) => {
+  const challenges = await challengeRepository.list();
+  res.json({ challenges });
 });
 
-challengesRouter.post("/:id/join", (req: Request, res: Response) => {
+challengesRouter.post("/:id/join", async (req: Request, res: Response) => {
   if (!env.ENABLE_CHALLENGES) {
     return res.status(503).json({ error: "challenges_disabled" });
   }
@@ -23,12 +25,13 @@ challengesRouter.post("/:id/join", (req: Request, res: Response) => {
     return res.status(400).json({ error: "invalid_request", details: parsed.error.format() });
   }
 
-  const challenge = store.challenges.find((c) => c.id === req.params.id);
+  const challengeId = req.params.id as string;
+  const challenge = await challengeRepository.getById(challengeId);
   if (!challenge) {
     return res.status(404).json({ error: "challenge_not_found" });
   }
 
-  const contributor = store.contributors.find((c) => c.id === parsed.data.contributorId);
+  const contributor = await contributorRepository.getById(parsed.data.contributorId);
   if (!contributor) {
     return res.status(404).json({ error: "contributor_not_found" });
   }
@@ -44,9 +47,11 @@ challengesRouter.post("/:id/join", (req: Request, res: Response) => {
     dataOrigin: contributor.dataOrigin,
   });
 
+  await challengeRepository.addParticipant(challenge.id, contributor.id);
+
   return res.json({
     message: "joined",
     challenge,
-    protocol: store.protocols.find((p) => p.id === challenge.protocolId),
+    protocol: challenge.protocol,
   });
 });

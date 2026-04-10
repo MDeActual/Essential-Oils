@@ -5,6 +5,9 @@ dotenv.config();
 
 const EnvSchema = z.object({
   APP_ENV: z.enum(["development", "staging", "production"]).default("development"),
+  DATABASE_URL: z.string().default("postgresql://postgres:postgres@localhost:5432/phytoai"),
+  JWT_SECRET: z.string().default("dev-jwt-secret-change-me"),
+  JWT_EXPIRES_IN: z.string().default("1h"),
   ENABLE_SYNTHETIC_DATA: z
     .enum(["true", "false"])
     .default("false")
