@@ -50,8 +50,16 @@
 
 ## Known Gaps (from Architecture Review)
 
-- `docs/` lacks: `natural_remedy_ontology.md`, `challenge_engine_specification.md`, `protocol_evolution_system.md`, and synthetic simulation specification documents — even though the orchestrator reading order references them.
-- These gaps should be addressed in the next architecture phase before source module implementation begins.
+All documentation gaps identified in the initial architecture review have been resolved (ADR-004, 2026-04-10):
+
+- ✅ `docs/natural_remedy_ontology.md` — created
+- ✅ `docs/challenge_engine_specification.md` — created
+- ✅ `docs/protocol_evolution_system.md` — created
+- ✅ `docs/synthetic_simulation_specification.md` — created
+- ✅ `docs/swarm_rules.md` — created
+- ✅ `docs/orchestrator_reading_order.md` — created
+
+Phase 0 documentation is complete. Phase 1 implementation requires human project lead review and authorization.
 
 ---
 

@@ -74,3 +74,24 @@ This log records all significant architectural decisions made for the Phyto.ai p
 **Consequences**: Public API design must be reviewed against moat boundaries. Any interface that risks exposing protected logic must be rejected or restructured.
 
 ---
+
+### ADR-004: Complete Phase 0 Architecture Documentation Gaps
+**Status**: ACCEPTED
+**Date**: 2026-04-10
+**Deciders**: Swarm Orchestrator (autonomous, within Phase 0 authority)
+
+**Context**: The `docs/` directory was missing four documents referenced by the orchestrator reading order and listed as pending in `.claude/current_phase.md`: `natural_remedy_ontology.md`, `challenge_engine_specification.md`, `protocol_evolution_system.md`, and a synthetic simulation specification. Additionally, `docs/swarm_rules.md` and `docs/orchestrator_reading_order.md` were listed in `docs/ARCHITECTURE_INDEX.md` but did not exist in the repository.
+
+**Decision**: Create all six missing documents as Phase 0 completion work:
+- `docs/swarm_rules.md` — Data integrity and multi-agent execution governance rules
+- `docs/orchestrator_reading_order.md` — Deterministic boot sequence for orchestrator and agent initialization
+- `docs/natural_remedy_ontology.md` — Oil and remedy classification taxonomy, property encodings, and V1 reference set
+- `docs/challenge_engine_specification.md` — Challenge type system, sequencing rules, lifecycle state machine, and behavioral logic
+- `docs/protocol_evolution_system.md` — Protocol versioning, evolution signal system, shadow deployment design, and rollback procedures
+- `docs/synthetic_simulation_specification.md` — Synthetic simulation infrastructure, contributor archetypes, isolation rules, and validation gates
+
+Update `docs/ARCHITECTURE_INDEX.md` to register all new files. Update `.claude/current_phase.md` to mark Phase 0 deliverables complete.
+
+**Consequences**: Phase 0 exit criteria (items 1 and 2) are now met. Human project lead review and Phase 1 authorization remain required before implementation begins. All Phase 1 source module work may now reference these documents as authoritative specifications.
+
+---

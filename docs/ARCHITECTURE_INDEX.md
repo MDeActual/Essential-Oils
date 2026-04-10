@@ -29,6 +29,10 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `docs/autonomous_iteration_protocol.md` | Rules for autonomous protocol evolution | ⬜ |
 | `docs/swarm_rules.md` | Data integrity and multi-agent execution rules | ⬜ |
 | `docs/orchestrator_reading_order.md` | Canonical reading order for orchestrator bootstrap | ⬜ |
+| `docs/natural_remedy_ontology.md` | Oil and remedy classification taxonomy and property encodings | ⬜ |
+| `docs/challenge_engine_specification.md` | Challenge type system, sequencing rules, and behavioral logic | ⬜ |
+| `docs/protocol_evolution_system.md` | Protocol versioning, evolution signal system, and shadow deployment | ⬜ |
+| `docs/synthetic_simulation_specification.md` | Synthetic simulation infrastructure, archetypes, and isolation rules | ⬜ |
 
 ---
 
