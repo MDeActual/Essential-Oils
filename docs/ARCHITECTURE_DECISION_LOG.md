@@ -99,3 +99,28 @@ Initialize Node.js/TypeScript project with `package.json`, `tsconfig.json`, and 
 - Blend synergy scoring and protocol generation are deliberately excluded from this module (LOCK-002).
 
 ---
+
+### ADR-005: Implement src/blend/ — Phase 1 Blend Entity Layer
+**Status**: ACCEPTED
+**Date**: 2026-04-11
+**Deciders**: Swarm Orchestrator (Phase 1 continuation authorized by Human Project Lead)
+
+**Context**: Phase 1 `src/ontology/` is complete. The next dependency-safe module is `src/blend/`, which depends only on the finished ontology layer. The Blend entity is required by the Protocol engine (planned next) and is defined in `docs/DOMAIN_MODEL.md`.
+
+**Decision**: Implement `src/blend/` in TypeScript with the following files:
+- `types.ts` — BlendId, BlendOilEntry, BlendRole, BlendSafetyStatus, Blend, validation result types
+- `schema.ts` — field-level constraint schema, VALID_BLEND_ROLES, BLEND_MIN_OILS, BLEND_MAX_OILS
+- `validation.ts` — `validateBlend()` and `validateBlendCollection()` with business rules
+- `index.ts` — public module interface
+- `__tests__/blend.test.ts` — comprehensive tests (44 tests)
+
+The synergy scoring algorithm (M-001) is intentionally excluded. The `synergyScore` field accepts a pre-computed value produced by the moat-protected blend intelligence layer.
+
+**Consequences**:
+- All consuming modules must import blend entities through `src/blend/index.ts`.
+- The `synergyScore` field is validated for range only; the computation method is not implemented here.
+- Blend records require at least 2 oil entries with distinct oilIds, each referencing the canonical ontology.
+- Exactly one oil entry per blend must carry the `primary` role.
+- Protocol engine (`src/protocol/`) can now reference Blend types from this module.
+
+---

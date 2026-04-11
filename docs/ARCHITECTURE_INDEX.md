@@ -46,8 +46,8 @@ This index is the authoritative map of all files, modules, and documents in the 
 | Module | Description | Status |
 |--------|-------------|--------|
 | `src/ontology/` | Oil and remedy ontology definitions | **Complete (Phase 1)** |
+| `src/blend/` | Blend entity types, schema, and validation | **Complete (Phase 1)** |
 | `src/protocol/` | Protocol recommendation engine | Planned |
-| `src/blend/` | Blend intelligence and synergy scoring | Planned |
 | `src/analytics/` | Contributor analytics pipeline | Planned |
 | `src/simulation/` | Synthetic simulation environment | Planned |
 | `src/api/` | External API layer | Planned |
@@ -62,6 +62,16 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `src/ontology/validation.ts` | validateOil() and validateOilRegistry() with business rules |
 | `src/ontology/index.ts` | Public module interface |
 | `src/ontology/__tests__/ontology.test.ts` | Ontology integrity tests (115 tests) |
+
+### /src/blend — Files
+
+| File | Description |
+|------|-------------|
+| `src/blend/types.ts` | TypeScript types: BlendId, BlendOilEntry, BlendRole, BlendSafetyStatus, Blend, validation result types |
+| `src/blend/schema.ts` | Field-level constraint schema; VALID_BLEND_ROLES, BLEND_MIN_OILS, BLEND_MAX_OILS constants |
+| `src/blend/validation.ts` | validateBlend() and validateBlendCollection() with business rules |
+| `src/blend/index.ts` | Public module interface |
+| `src/blend/__tests__/blend.test.ts` | Blend integrity and validation tests (44 tests) |
 
 ---
 
