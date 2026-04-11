@@ -51,3 +51,5 @@ Phase 2 is complete when:
 | `src/ontology/` — oil ontology structures, schema, validation | ✅ Complete |
 | `src/blend/` — blend entity types, schema, validation | ✅ Complete |
 | `src/protocol/` — protocol and challenge entity types, schema, validation | ✅ Complete |
+| `src/challenge/` — challenge lifecycle, state transitions, participation and completion records | ✅ Complete |
+| `src/simulation/` — synthetic simulation environment | ✅ Complete |

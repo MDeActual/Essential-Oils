@@ -42,9 +42,10 @@
 | `src/ontology/` | Oil ontology structures, schema, validation | ✅ Complete (Phase 1) |
 | `src/blend/` | Blend entity types, schema, validation | ✅ Complete (Phase 1) |
 | `src/protocol/` | Protocol and Challenge entity types, schema, validation | ✅ Complete (Phase 1) |
+| `src/challenge/` | Challenge lifecycle, state transitions, participation and completion records | ✅ Complete (Phase 1) |
 | `src/analytics/` | Contributor analytics pipeline | 🔄 In Progress (Phase 2) |
-| `src/simulation/` | Synthetic simulation environment | ⬜ Planned (Phase 3) |
-| `src/api/` | External API layer | ⬜ Planned (Phase 4) |
+| `src/simulation/` | Synthetic simulation environment | ✅ Complete (Phase 1) |
+| `src/api/` | External API layer | ⬜ Planned |
 
 ---
 

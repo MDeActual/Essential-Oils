@@ -49,9 +49,8 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `src/blend/` | Blend entity types, schema, and validation | **Complete (Phase 1)** |
 | `src/protocol/` | Protocol and Challenge entity types, schema, and validation | **Complete (Phase 1)** |
 | `src/challenge/` | Challenge lifecycle, state transitions, participation and completion records | **Complete (Phase 1)** |
-| `src/analytics/` | Contributor analytics pipeline | Planned |
 | `src/analytics/` | Contributor analytics pipeline | **In Progress (Phase 2)** |
-| `src/simulation/` | Synthetic simulation environment | Planned |
+| `src/simulation/` | Synthetic simulation environment | **Complete (Phase 1)** |
 | `src/api/` | External API layer | Planned |
 
 ### /src/ontology — Files
@@ -94,6 +93,7 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `src/challenge/validation.ts` | validateChallengeTransition(), validateChallengeParticipation(), validateChallengeCompletionRecord(), validateChallengeCompletionRecordCollection() with business rules |
 | `src/challenge/index.ts` | Public module interface |
 | `src/challenge/__tests__/challenge.test.ts` | Challenge lifecycle, participation, and completion integrity tests |
+
 ### /src/analytics — Files
 
 | File | Description |
@@ -104,6 +104,17 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `src/analytics/pipeline.ts` | filterAnalyticsEligible(), aggregateCohortMetrics(), runAnalyticsPipeline() — structural aggregation (M-004 boundary respected) |
 | `src/analytics/index.ts` | Public module interface |
 | `src/analytics/__tests__/analytics.test.ts` | Contributor analytics validation and pipeline tests |
+
+### /src/simulation — Files
+
+| File | Description |
+|------|-------------|
+| `src/simulation/types.ts` | TypeScript types: DataOrigin, ExclusionStatus, ExclusionReason enums; ContributorRecord, SyntheticContributorRecord, SimulationContext, SimulationBatch, SyntheticRecordOptions, validation result types |
+| `src/simulation/schema.ts` | Field-level constraint schema; ADHERENCE_EXCLUSION_THRESHOLD and score/rate range constants |
+| `src/simulation/generators.ts` | generateSyntheticContributorRecord() and generateSyntheticContributorBatch() with mandatory isolation enforcement |
+| `src/simulation/validation.ts` | validateContributorRecord(), validateContributorRecordCollection(), assertSyntheticIsolation(), assertBatchIsolation(), filterAnalyticsEligible() |
+| `src/simulation/index.ts` | Public module interface |
+| `src/simulation/__tests__/simulation.test.ts` | Simulation layer integrity tests (89 tests) |
 
 ---
 
