@@ -98,12 +98,12 @@ This index is the authoritative map of all files, modules, and documents in the 
 
 | File | Description |
 |------|-------------|
-| `src/analytics/types.ts` | TypeScript types: DataOrigin, ExclusionStatus, ExclusionReason enums; ContributorRecord, CohortMetrics, AnalyticsPipelineResult, validation result types |
+| `src/analytics/types.ts` | TypeScript types: DataOrigin, ExclusionStatus, ExclusionReason enums; ContributorRecord, CohortMetrics, AnalyticsPipelineResult, ProtocolCohortSegment, ProtocolSegmentReport, validation result types |
 | `src/analytics/schema.ts` | Field-level constraint schema; ADHERENCE_EXCLUSION_THRESHOLD constant |
 | `src/analytics/validation.ts` | validateContributorRecord() and validateContributorRecordCollection() enforcing LOCK-003 rules |
-| `src/analytics/pipeline.ts` | filterAnalyticsEligible(), aggregateCohortMetrics(), runAnalyticsPipeline() — structural aggregation (M-004 boundary respected) |
+| `src/analytics/pipeline.ts` | filterAnalyticsEligible(), aggregateCohortMetrics(), runAnalyticsPipeline(), segmentByProtocol(), runProtocolSegmentPipeline() — structural aggregation and per-protocol segmentation (M-004 boundary respected) |
 | `src/analytics/index.ts` | Public module interface |
-| `src/analytics/__tests__/analytics.test.ts` | Contributor analytics validation and pipeline tests |
+| `src/analytics/__tests__/analytics.test.ts` | Contributor analytics validation, pipeline, and segmentation tests |
 
 ### /src/simulation — Files
 

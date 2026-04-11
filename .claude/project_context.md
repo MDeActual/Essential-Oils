@@ -12,7 +12,7 @@
 
 **Architecture Package Version**: v11 CANONICAL
 **Governance Layer**: Architecture Control Layer v1.0 (established 2026-04-10)
-**Development Status**: Phase 2 in progress — `src/ontology/`, `src/blend/`, `src/protocol/` complete (Phase 1); `src/analytics/` in progress (Phase 2); `src/simulation/` and `src/api/` planned.
+**Development Status**: Phase 2 functionally complete — `src/analytics/` baseline + protocol cohort segmentation slice complete; awaiting human review before Phase 3 kickoff. `src/api/` planned for Phase 3.
 
 ---
 
@@ -43,7 +43,7 @@
 | `src/blend/` | Blend entity types, schema, validation | ✅ Complete (Phase 1) |
 | `src/protocol/` | Protocol and Challenge entity types, schema, validation | ✅ Complete (Phase 1) |
 | `src/challenge/` | Challenge lifecycle, state transitions, participation and completion records | ✅ Complete (Phase 1) |
-| `src/analytics/` | Contributor analytics pipeline | 🔄 In Progress (Phase 2) |
+| `src/analytics/` | Contributor analytics pipeline | ✅ Complete (Phase 2) |
 | `src/simulation/` | Synthetic simulation environment | ✅ Complete (Phase 1) |
 | `src/api/` | External API layer | ⬜ Planned |
 

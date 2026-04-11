@@ -26,6 +26,8 @@ import {
   ContributorRecord,
   DataOrigin,
   ExclusionStatus,
+  ProtocolCohortSegment,
+  ProtocolSegmentReport,
 } from "./types";
 import { validateContributorRecordCollection } from "./validation";
 
@@ -160,4 +162,99 @@ export function runAnalyticsPipeline(
   const metrics = aggregateCohortMetrics(eligible, excluded);
 
   return { success: true, metrics, errors: [] };
+}
+
+// ---------------------------------------------------------------------------
+// Protocol cohort segmentation
+// ---------------------------------------------------------------------------
+
+/**
+ * Groups analytics-eligible contributor records by their protocolId and
+ * produces a per-protocol cohort segment for each distinct protocol.
+ *
+ * MOAT NOTICE (M-004): This function produces structural per-protocol
+ * aggregations only. Protocol ranking, scoring, and evolution signal
+ * extraction are moat-protected and must not be added here.
+ *
+ * @param eligible - Records that have already passed the eligibility filter.
+ * @param excluded - Records that did not pass the eligibility filter (used for
+ *                   the global exclusion total; not broken down per-protocol).
+ * @returns An array of ProtocolCohortSegment entries, one per distinct protocolId.
+ */
+export function segmentByProtocol(
+  eligible: ContributorRecord[],
+  excluded: ContributorRecord[]
+): ProtocolCohortSegment[] {
+  // Group eligible records by protocolId.
+  const protocolMap = new Map<string, ContributorRecord[]>();
+  for (const record of eligible) {
+    const existing = protocolMap.get(record.protocolId);
+    if (existing) {
+      existing.push(record);
+    } else {
+      protocolMap.set(record.protocolId, [record]);
+    }
+  }
+
+  // Build one segment per protocol. Excluded records are not attributed to a
+  // specific protocol segment; they are captured at the report level.
+  const segments: ProtocolCohortSegment[] = [];
+  for (const [protocolId, protocolRecords] of protocolMap) {
+    segments.push({
+      protocolId,
+      metrics: aggregateCohortMetrics(protocolRecords, []),
+    });
+  }
+
+  // Sort deterministically by protocolId so output is stable.
+  segments.sort((a, b) => a.protocolId.localeCompare(b.protocolId));
+
+  return segments;
+}
+
+/**
+ * Runs the full protocol segmentation pipeline over a set of raw contributor
+ * records.
+ *
+ * Steps:
+ * 1. Validate all records for structural correctness and LOCK-003 compliance.
+ * 2. Abort with errors if any record fails validation.
+ * 3. Filter records to the analytics-eligible subset.
+ * 4. Group eligible records by protocolId and aggregate per-protocol metrics.
+ *
+ * MOAT NOTICE (M-004): Produces structural per-protocol aggregations only.
+ * Signal extraction and protocol evolution recommendations are moat-protected.
+ *
+ * @param records - Raw contributor records to process.
+ * @returns A ProtocolSegmentReport with per-protocol cohort segments or error details.
+ */
+export function runProtocolSegmentPipeline(
+  records: ContributorRecord[]
+): ProtocolSegmentReport {
+  // Step 1: Validate all records.
+  const validationResult = validateContributorRecordCollection(records);
+  if (!validationResult.valid) {
+    const errors: AnalyticsError[] = validationResult.errors.map((e) => ({
+      code: "VALIDATION_ERROR",
+      message: `[${e.recordId ?? "unknown"}] ${e.field}: ${e.message}`,
+    }));
+    return { success: false, errors };
+  }
+
+  // Step 2: Filter to analytics-eligible records.
+  const eligible = filterAnalyticsEligible(records);
+  const excluded = records.filter((r) => !eligible.includes(r));
+
+  // Step 3: Segment by protocol.
+  const segments = segmentByProtocol(eligible, excluded);
+
+  return {
+    success: true,
+    segments,
+    protocolCount: segments.length,
+    totalEligibleRecords: eligible.length,
+    totalExcludedRecords: excluded.length,
+    generatedAt: new Date().toISOString(),
+    errors: [],
+  };
 }

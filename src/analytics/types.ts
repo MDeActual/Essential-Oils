@@ -160,6 +160,63 @@ export interface AnalyticsPipelineResult {
 }
 
 // ---------------------------------------------------------------------------
+// Protocol Cohort Segmentation
+// ---------------------------------------------------------------------------
+
+/**
+ * Aggregated cohort metrics for a single protocol, produced by the protocol
+ * segmentation pipeline.
+ *
+ * MOAT NOTICE (M-004): Contains only structural aggregations. Protocol ranking,
+ * comparative scoring, and protocol evolution signal extraction are moat-protected
+ * and must not be derived from or embedded in this type.
+ */
+export interface ProtocolCohortSegment {
+  /** The protocol identifier this segment describes. */
+  protocolId: string;
+  /** Cohort metrics for analytics-eligible records assigned to this protocol. */
+  metrics: CohortMetrics;
+}
+
+/**
+ * The full result of the protocol segmentation pipeline: one segment per distinct
+ * protocolId found in the input record set.
+ *
+ * MOAT NOTICE (M-004): This report provides structural per-protocol aggregation
+ * only. The signal extraction methodology that translates these metrics into
+ * protocol evolution recommendations is moat-protected and must not be
+ * reconstructed from this output.
+ */
+export interface ProtocolSegmentReport {
+  /** Whether the segmentation pipeline ran without errors. */
+  success: boolean;
+  /**
+   * One segment entry per distinct protocolId observed in the input records.
+   * Present when success is true.
+   */
+  segments?: ProtocolCohortSegment[];
+  /**
+   * Total number of distinct protocols represented in the eligible cohort.
+   * Present when success is true.
+   */
+  protocolCount?: number;
+  /**
+   * Total number of analytics-eligible records across all segments.
+   * Present when success is true.
+   */
+  totalEligibleRecords?: number;
+  /**
+   * Total number of records excluded before segmentation.
+   * Present when success is true.
+   */
+  totalExcludedRecords?: number;
+  /** ISO 8601 timestamp when this report was generated. */
+  generatedAt?: string;
+  /** Errors encountered during the segmentation pipeline run. */
+  errors: AnalyticsError[];
+}
+
+// ---------------------------------------------------------------------------
 // Validation Types
 // ---------------------------------------------------------------------------
 

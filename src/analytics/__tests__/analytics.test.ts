@@ -13,6 +13,8 @@ import {
   aggregateCohortMetrics,
   filterAnalyticsEligible,
   runAnalyticsPipeline,
+  runProtocolSegmentPipeline,
+  segmentByProtocol,
   validateContributorRecord,
   validateContributorRecordCollection,
 } from "../index";
@@ -587,5 +589,186 @@ describe("runAnalyticsPipeline", () => {
     expect(result.success).toBe(true);
     expect(result.metrics!.eligibleRecordCount).toBe(1);
     expect(result.metrics!.excludedRecordCount).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// segmentByProtocol
+// ---------------------------------------------------------------------------
+
+describe("segmentByProtocol", () => {
+  it("returns one segment per distinct protocolId", () => {
+    const eligible = [
+      makeRecord({ recordId: "r1", protocolId: "protocol-a", adherenceScore: 70 }),
+      makeRecord({ recordId: "r2", protocolId: "protocol-b", adherenceScore: 80 }),
+      makeRecord({ recordId: "r3", protocolId: "protocol-a", adherenceScore: 90 }),
+    ];
+    const segments = segmentByProtocol(eligible, []);
+    expect(segments).toHaveLength(2);
+    const ids = segments.map((s) => s.protocolId);
+    expect(ids).toContain("protocol-a");
+    expect(ids).toContain("protocol-b");
+  });
+
+  it("computes correct metrics per protocol segment", () => {
+    const eligible = [
+      makeRecord({ recordId: "r1", protocolId: "protocol-a", adherenceScore: 60, challengeCompletionRate: 65 }),
+      makeRecord({ recordId: "r2", protocolId: "protocol-a", adherenceScore: 80, challengeCompletionRate: 85 }),
+      makeRecord({ recordId: "r3", protocolId: "protocol-b", adherenceScore: 100, challengeCompletionRate: 100 }),
+    ];
+    const segments = segmentByProtocol(eligible, []);
+    const segA = segments.find((s) => s.protocolId === "protocol-a")!;
+    const segB = segments.find((s) => s.protocolId === "protocol-b")!;
+
+    expect(segA.metrics.eligibleRecordCount).toBe(2);
+    expect(segA.metrics.averageAdherenceScore).toBeCloseTo(70);
+    expect(segA.metrics.minAdherenceScore).toBe(60);
+    expect(segA.metrics.maxAdherenceScore).toBe(80);
+
+    expect(segB.metrics.eligibleRecordCount).toBe(1);
+    expect(segB.metrics.averageAdherenceScore).toBe(100);
+  });
+
+  it("returns an empty array when eligible records list is empty", () => {
+    expect(segmentByProtocol([], [])).toHaveLength(0);
+  });
+
+  it("returns segments sorted alphabetically by protocolId", () => {
+    const eligible = [
+      makeRecord({ recordId: "r1", protocolId: "protocol-z" }),
+      makeRecord({ recordId: "r2", protocolId: "protocol-a" }),
+      makeRecord({ recordId: "r3", protocolId: "protocol-m" }),
+    ];
+    const segments = segmentByProtocol(eligible, []);
+    expect(segments.map((s) => s.protocolId)).toEqual(["protocol-a", "protocol-m", "protocol-z"]);
+  });
+
+  it("produces a single segment when all records share the same protocolId", () => {
+    const eligible = [
+      makeRecord({ recordId: "r1", protocolId: "protocol-only", adherenceScore: 60 }),
+      makeRecord({ recordId: "r2", protocolId: "protocol-only", adherenceScore: 80 }),
+    ];
+    const segments = segmentByProtocol(eligible, []);
+    expect(segments).toHaveLength(1);
+    expect(segments[0].protocolId).toBe("protocol-only");
+    expect(segments[0].metrics.eligibleRecordCount).toBe(2);
+  });
+
+  it("excludedRecordCount within each segment is always 0 (excluded records are not attributed per-protocol)", () => {
+    const eligible = [
+      makeRecord({ recordId: "r1", protocolId: "protocol-a" }),
+    ];
+    const excluded = [
+      makeExcludedRecord({ recordId: "e1" }),
+    ];
+    const segments = segmentByProtocol(eligible, excluded);
+    expect(segments[0].metrics.excludedRecordCount).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// runProtocolSegmentPipeline — integration
+// ---------------------------------------------------------------------------
+
+describe("runProtocolSegmentPipeline", () => {
+  it("returns success with one segment per protocol", () => {
+    const records = [
+      makeRecord({ recordId: "r1", protocolId: "protocol-a", adherenceScore: 70 }),
+      makeRecord({ recordId: "r2", protocolId: "protocol-b", adherenceScore: 80 }),
+      makeRecord({ recordId: "r3", protocolId: "protocol-a", adherenceScore: 90 }),
+      makeExcludedRecord({ recordId: "r4" }),
+    ];
+    const result = runProtocolSegmentPipeline(records);
+    expect(result.success).toBe(true);
+    expect(result.errors).toHaveLength(0);
+    expect(result.protocolCount).toBe(2);
+    expect(result.totalEligibleRecords).toBe(3);
+    expect(result.totalExcludedRecords).toBe(1);
+    expect(result.segments).toHaveLength(2);
+  });
+
+  it("returns a valid ISO 8601 generatedAt timestamp", () => {
+    const result = runProtocolSegmentPipeline([makeRecord()]);
+    expect(result.generatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T[\d:+Z.]+$/);
+  });
+
+  it("returns success with zero segments when all records are excluded", () => {
+    const records = [makeExcludedRecord({ recordId: "r1" })];
+    const result = runProtocolSegmentPipeline(records);
+    expect(result.success).toBe(true);
+    expect(result.segments).toHaveLength(0);
+    expect(result.protocolCount).toBe(0);
+    expect(result.totalEligibleRecords).toBe(0);
+    expect(result.totalExcludedRecords).toBe(1);
+  });
+
+  it("returns success with empty segments for an empty input", () => {
+    const result = runProtocolSegmentPipeline([]);
+    expect(result.success).toBe(true);
+    expect(result.segments).toHaveLength(0);
+    expect(result.protocolCount).toBe(0);
+    expect(result.totalEligibleRecords).toBe(0);
+    expect(result.totalExcludedRecords).toBe(0);
+  });
+
+  it("returns failure when any record fails validation", () => {
+    const records = [
+      makeRecord({ recordId: "r1" }),
+      makeRecord({ recordId: "r2", adherenceScore: 999 }), // invalid
+    ];
+    const result = runProtocolSegmentPipeline(records);
+    expect(result.success).toBe(false);
+    expect(result.errors.length).toBeGreaterThan(0);
+    expect(result.segments).toBeUndefined();
+  });
+
+  it("returns failure for LOCK-003 violation (synthetic marked Included)", () => {
+    const records = [
+      makeRecord({
+        recordId: "r1",
+        dataOrigin: DataOrigin.SyntheticSimulation,
+        exclusionStatus: ExclusionStatus.Included,
+      }),
+    ];
+    const result = runProtocolSegmentPipeline(records);
+    expect(result.success).toBe(false);
+    expect(result.errors.some((e) => e.code === "VALIDATION_ERROR")).toBe(true);
+  });
+
+  it("returns failure for duplicate recordId in input", () => {
+    const records = [
+      makeRecord({ recordId: "dup" }),
+      makeRecord({ recordId: "dup" }),
+    ];
+    const result = runProtocolSegmentPipeline(records);
+    expect(result.success).toBe(false);
+  });
+
+  it("correctly excludes synthetic records from segment counts", () => {
+    const records = [
+      makeRecord({ recordId: "r-real", protocolId: "protocol-a", adherenceScore: 75 }),
+      makeRecord({
+        recordId: "r-synth",
+        protocolId: "protocol-a",
+        dataOrigin: DataOrigin.SyntheticSimulation,
+        exclusionStatus: ExclusionStatus.Excluded,
+        exclusionReason: ExclusionReason.SyntheticData,
+      }),
+    ];
+    const result = runProtocolSegmentPipeline(records);
+    expect(result.success).toBe(true);
+    expect(result.totalEligibleRecords).toBe(1);
+    expect(result.totalExcludedRecords).toBe(1);
+    expect(result.segments![0].metrics.eligibleRecordCount).toBe(1);
+  });
+
+  it("segments are sorted alphabetically by protocolId", () => {
+    const records = [
+      makeRecord({ recordId: "r1", protocolId: "protocol-z" }),
+      makeRecord({ recordId: "r2", protocolId: "protocol-a" }),
+    ];
+    const result = runProtocolSegmentPipeline(records);
+    expect(result.success).toBe(true);
+    expect(result.segments!.map((s) => s.protocolId)).toEqual(["protocol-a", "protocol-z"]);
   });
 });
