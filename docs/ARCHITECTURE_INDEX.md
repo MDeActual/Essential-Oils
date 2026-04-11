@@ -48,6 +48,8 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `src/ontology/` | Oil and remedy ontology definitions | **Complete (Phase 1)** |
 | `src/blend/` | Blend entity types, schema, and validation | **Complete (Phase 1)** |
 | `src/protocol/` | Protocol and Challenge entity types, schema, and validation | **Complete (Phase 1)** |
+| `src/challenge/` | Challenge lifecycle, state transitions, participation and completion records | **Complete (Phase 1)** |
+| `src/analytics/` | Contributor analytics pipeline | Planned |
 | `src/analytics/` | Contributor analytics pipeline | **In Progress (Phase 2)** |
 | `src/simulation/` | Synthetic simulation environment | Planned |
 | `src/api/` | External API layer | Planned |
@@ -83,6 +85,15 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `src/protocol/index.ts` | Public module interface |
 | `src/protocol/__tests__/protocol.test.ts` | Protocol and Challenge integrity tests (68 tests) |
 
+### /src/challenge — Files
+
+| File | Description |
+|------|-------------|
+| `src/challenge/types.ts` | TypeScript types: ChallengeLifecycleEventType enum; ChallengeTransition, ChallengeParticipation, ChallengeCompletionRecord types; validation result types |
+| `src/challenge/schema.ts` | VALID_TRANSITIONS state machine map; field-level constraint schemas for participation and completion records; CHALLENGE_RESPONSE_MAX_LENGTH, CHALLENGE_SKIP_REASON_MAX_LENGTH constants |
+| `src/challenge/validation.ts` | validateChallengeTransition(), validateChallengeParticipation(), validateChallengeCompletionRecord(), validateChallengeCompletionRecordCollection() with business rules |
+| `src/challenge/index.ts` | Public module interface |
+| `src/challenge/__tests__/challenge.test.ts` | Challenge lifecycle, participation, and completion integrity tests |
 ### /src/analytics — Files
 
 | File | Description |

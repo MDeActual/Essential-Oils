@@ -150,6 +150,29 @@ The protocol generation algorithm (M-002) and challenge engine rules (M-003) are
 
 ---
 
+### ADR-007: Implement src/challenge/ — Phase 1 Challenge Engine Foundation Layer
+**Status**: ACCEPTED
+**Date**: 2026-04-11
+**Deciders**: Swarm Orchestrator (Phase 1 continuation authorized by Human Project Lead; Worker Agent B)
+
+**Context**: Phase 1 `src/protocol/` is complete and provides the foundational Challenge entity types and structural validation. The next dependency-safe slice is a dedicated `src/challenge/` module that builds the challenge lifecycle layer on top of the protocol module. This layer adds lifecycle event types, state transition validation, participation records, and completion records — all without implementing the moat-protected challenge engine rules (M-003).
+
+**Decision**: Implement `src/challenge/` in TypeScript with the following files:
+- `types.ts` — ChallengeLifecycleEventType enum; ChallengeTransition, ChallengeParticipation, ChallengeCompletionRecord types; validation result types
+- `schema.ts` — VALID_TRANSITIONS state machine map, field-level constraint schemas for participation and completion records, module constants
+- `validation.ts` — `validateChallengeTransition()`, `validateChallengeParticipation()`, `validateChallengeCompletionRecord()`, `validateChallengeCompletionRecordCollection()` with business rules
+- `index.ts` — public module interface
+- `__tests__/challenge.test.ts` — comprehensive lifecycle and integrity tests
+
+The challenge engine rule evaluation logic (M-003) — the proprietary system governing when, how, and why challenges are presented and sequenced — is intentionally excluded from this module. This module handles only lifecycle transitions, participation tracking, and completion record integrity.
+
+**Consequences**:
+- All consuming modules must import challenge lifecycle types through `src/challenge/index.ts`.
+- Challenge entity types (Challenge, ChallengeId, ChallengeType, ChallengeCompletionStatus) continue to be imported from `src/protocol/index.ts`; `src/challenge/` imports and re-exports them for convenience.
+- The VALID_TRANSITIONS map encodes the state machine rules for legal lifecycle transitions: only `pending → completed` and `pending → skipped` are valid; terminal states (completed, skipped) admit no further transitions.
+- Completed challenges must carry a non-empty `response` field in their completion record.
+- The challenge engine sequencing and personalization heuristics (M-003) must not be reconstructed in any public module.
+- Analytics (`src/analytics/`) and simulation (`src/simulation/`) can now reference challenge lifecycle types from this module.
 ### ADR-007: Implement src/analytics/ — Phase 2 Contributor Analytics Pipeline
 **Status**: ACCEPTED
 **Date**: 2026-04-11

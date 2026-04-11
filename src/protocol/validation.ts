@@ -45,9 +45,39 @@ import {
 // duplicating ~200 lines of switch/case code.
 // ---------------------------------------------------------------------------
 
-type ErrorPush = (field: string, message: string) => void;
+export type ErrorPush = (field: string, message: string) => void;
 
-function applyConstraint(
+/**
+ * Applies all field constraints from a schema record to a data record,
+ * pushing any violations to the provided error callback.
+ *
+ * Exported as a shared utility for consuming modules (e.g., src/challenge/).
+ * Not re-exported through src/protocol/index.ts to keep the public API clean.
+ */
+export function applyFieldConstraints(
+  record: Record<string, unknown>,
+  schema: Record<string, FieldConstraint>,
+  push: ErrorPush
+): void {
+  for (const [field, constraint] of Object.entries(schema)) {
+    applyConstraint(record[field], field, constraint, push);
+  }
+}
+
+/**
+ * Applies a single field constraint to a value, pushing any violations to the
+ * provided error callback.
+ *
+ * Handles string, number, boolean, array, and enum constraint types.
+ * Exported as a shared utility for consuming modules (e.g., src/challenge/).
+ * Not re-exported through src/protocol/index.ts to keep the public API clean.
+ *
+ * @param value - The value to validate.
+ * @param field - The field name (used in error messages).
+ * @param constraint - The constraint definition from a schema record.
+ * @param push - Callback to receive any validation errors.
+ */
+export function applyConstraint(
   value: unknown,
   field: string,
   constraint: FieldConstraint,
