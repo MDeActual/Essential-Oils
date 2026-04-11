@@ -36,9 +36,7 @@ import {
   CHALLENGE_TRANSITION_SCHEMA,
   VALID_TRANSITIONS,
 } from "./schema";
-import {
-  applyFieldConstraints,
-} from "../protocol/validation";
+import { applyFieldConstraints } from "../protocol/validation";
 
 // ---------------------------------------------------------------------------
 // validateChallengeTransition
@@ -197,17 +195,6 @@ export function validateChallengeParticipation(
         `Field 'skipReason' must not exceed ${CHALLENGE_SKIP_REASON_MAX_LENGTH} characters.`
       );
     }
-  }
-
-  // Validate optional response if present (for event types where it is optional).
-  if (
-    participation.response !== undefined &&
-    eventType !== ChallengeLifecycleEventType.Responded &&
-    eventType !== ChallengeLifecycleEventType.Completed
-  ) {
-    // Already handled the Presented/Expired case above; remaining case is
-    // any unknown eventType that passed schema validation.
-    // No additional action needed here.
   }
 
   return { valid: errors.length === 0, errors };

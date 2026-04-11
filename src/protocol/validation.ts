@@ -64,6 +64,19 @@ export function applyFieldConstraints(
   }
 }
 
+/**
+ * Applies a single field constraint to a value, pushing any violations to the
+ * provided error callback.
+ *
+ * Handles string, number, boolean, array, and enum constraint types.
+ * Exported as a shared utility for consuming modules (e.g., src/challenge/).
+ * Not re-exported through src/protocol/index.ts to keep the public API clean.
+ *
+ * @param value - The value to validate.
+ * @param field - The field name (used in error messages).
+ * @param constraint - The constraint definition from a schema record.
+ * @param push - Callback to receive any validation errors.
+ */
 export function applyConstraint(
   value: unknown,
   field: string,
