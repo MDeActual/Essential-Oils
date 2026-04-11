@@ -166,6 +166,9 @@ export function validateContributorRecord(
   }
 
   // LOCK-003: Records with adherence below threshold must be excluded.
+  // Note: The specific exclusionReason is not constrained to AdherenceBelowThreshold here —
+  // an operator may apply ManualExclusion or another valid reason instead. The requirement
+  // is that the record is excluded, not that the reason exactly matches the cause.
   if (
     typeof record.adherenceScore === "number" &&
     Number.isInteger(record.adherenceScore) &&

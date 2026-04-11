@@ -618,7 +618,7 @@ describe("assertSyntheticIsolation", () => {
 // ---------------------------------------------------------------------------
 
 describe("assertBatchIsolation", () => {
-  function makeBatch(overrides: Partial<SimulationBatch["context"]> = {}): SimulationBatch {
+  function makeBatch(): SimulationBatch {
     return generateSyntheticContributorBatch("run-02", "protocol-test", 2, {
       protocolId: "protocol-test",
     });
