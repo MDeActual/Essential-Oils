@@ -23,7 +23,7 @@ Phase 1 implements the source modules defined in `docs/ARCHITECTURE_INDEX.md`, s
 | `src/blend/` — blend entity types, schema, validation | ✅ Complete |
 | `src/protocol/` — protocol and challenge entity types, schema, validation | ✅ Complete |
 | `src/analytics/` — contributor analytics pipeline | ⬜ Planned |
-| `src/simulation/` — synthetic simulation environment | ⬜ Planned |
+| `src/simulation/` — synthetic simulation environment | ✅ Complete |
 | `src/api/` — external API layer | ⬜ Planned |
 
 ---

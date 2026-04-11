@@ -40,8 +40,13 @@
 | Module | Purpose |
 |--------|---------|
 | `src/analytics/` | Contributor analytics pipeline |
-| `src/simulation/` | Synthetic simulation environment |
 | `src/api/` | External API layer |
+
+## Built Source Modules
+
+| Module | Purpose | Status |
+|--------|---------|--------|
+| `src/simulation/` | Synthetic simulation environment | ✅ Complete (Phase 1) |
 
 ---
 

@@ -49,7 +49,7 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `src/blend/` | Blend entity types, schema, and validation | **Complete (Phase 1)** |
 | `src/protocol/` | Protocol and Challenge entity types, schema, and validation | **Complete (Phase 1)** |
 | `src/analytics/` | Contributor analytics pipeline | Planned |
-| `src/simulation/` | Synthetic simulation environment | Planned |
+| `src/simulation/` | Synthetic simulation environment | **Complete (Phase 1)** |
 | `src/api/` | External API layer | Planned |
 
 ### /src/ontology — Files
@@ -82,6 +82,17 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `src/protocol/validation.ts` | validateProtocol(), validateProtocolCollection(), validateChallenge(), validateChallengeCollection() with business rules |
 | `src/protocol/index.ts` | Public module interface |
 | `src/protocol/__tests__/protocol.test.ts` | Protocol and Challenge integrity tests (68 tests) |
+
+### /src/simulation — Files
+
+| File | Description |
+|------|-------------|
+| `src/simulation/types.ts` | TypeScript types: DataOrigin, ExclusionStatus, ExclusionReason enums; ContributorRecord, SyntheticContributorRecord, SimulationContext, SimulationBatch, SyntheticRecordOptions, validation result types |
+| `src/simulation/schema.ts` | Field-level constraint schema; ADHERENCE_EXCLUSION_THRESHOLD and score/rate range constants |
+| `src/simulation/generators.ts` | generateSyntheticContributorRecord() and generateSyntheticContributorBatch() with mandatory isolation enforcement |
+| `src/simulation/validation.ts` | validateContributorRecord(), validateContributorRecordCollection(), assertSyntheticIsolation(), assertBatchIsolation(), filterAnalyticsEligible() |
+| `src/simulation/index.ts` | Public module interface |
+| `src/simulation/__tests__/simulation.test.ts` | Simulation layer integrity tests (89 tests) |
 
 ---
 
