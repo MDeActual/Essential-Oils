@@ -224,6 +224,7 @@ All functions operate exclusively on analytics-eligible records (LOCK-003). The 
 
 ---
 
+### ADR-009: Implement src/simulation/ — Phase 1 Synthetic Simulation Layer
 **Status**: ACCEPTED
 **Date**: 2026-04-11
 **Deciders**: Worker Agent C (Phase 1 continuation; Swarm Orchestrator authority)
