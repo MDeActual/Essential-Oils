@@ -226,5 +226,3 @@ export const CHALLENGE_SCHEMA: Record<string, FieldConstraint> = {
     allowedValues: Object.values(ChallengeCompletionStatus),
   },
 };
-
-

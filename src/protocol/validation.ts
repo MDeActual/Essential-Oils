@@ -38,19 +38,24 @@ import {
 } from "./schema";
 
 // ---------------------------------------------------------------------------
-// Low-level field validator (mirrors ontology/blend validation pattern)
+// Low-level field validator (shared across Protocol and Challenge layers)
+//
+// Uses a generic push callback so the same logic can populate typed error
+// arrays (ProtocolValidationError | ChallengeValidationError) without
+// duplicating ~200 lines of switch/case code.
 // ---------------------------------------------------------------------------
 
-function applyProtocolConstraint(
+type ErrorPush = (field: string, message: string) => void;
+
+function applyConstraint(
   value: unknown,
   field: string,
   constraint: FieldConstraint,
-  errors: ProtocolValidationError[],
-  protocolId?: string
+  push: ErrorPush
 ): void {
   if (value === undefined || value === null) {
     if (constraint.required) {
-      errors.push({ protocolId, field, message: `Required field '${field}' is missing.` });
+      push(field, `Required field '${field}' is missing.`);
     }
     return;
   }
@@ -58,80 +63,52 @@ function applyProtocolConstraint(
   switch (constraint.type) {
     case "string": {
       if (typeof value !== "string") {
-        errors.push({ protocolId, field, message: `Field '${field}' must be a string.` });
+        push(field, `Field '${field}' must be a string.`);
         return;
       }
       if (constraint.minLength !== undefined && value.length < constraint.minLength) {
-        errors.push({
-          protocolId,
-          field,
-          message: `Field '${field}' must be at least ${constraint.minLength} characters.`,
-        });
+        push(field, `Field '${field}' must be at least ${constraint.minLength} characters.`);
       }
       if (constraint.maxLength !== undefined && value.length > constraint.maxLength) {
-        errors.push({
-          protocolId,
-          field,
-          message: `Field '${field}' must not exceed ${constraint.maxLength} characters.`,
-        });
+        push(field, `Field '${field}' must not exceed ${constraint.maxLength} characters.`);
       }
       if (constraint.pattern && !constraint.pattern.test(value)) {
-        errors.push({
-          protocolId,
-          field,
-          message: `Field '${field}' does not match the required format.`,
-        });
+        push(field, `Field '${field}' does not match the required format.`);
       }
       break;
     }
 
     case "number": {
       if (typeof value !== "number" || isNaN(value)) {
-        errors.push({ protocolId, field, message: `Field '${field}' must be a number.` });
+        push(field, `Field '${field}' must be a number.`);
         return;
       }
       if (constraint.min !== undefined && value < constraint.min) {
-        errors.push({
-          protocolId,
-          field,
-          message: `Field '${field}' must be >= ${constraint.min}.`,
-        });
+        push(field, `Field '${field}' must be >= ${constraint.min}.`);
       }
       if (constraint.max !== undefined && value > constraint.max) {
-        errors.push({
-          protocolId,
-          field,
-          message: `Field '${field}' must be <= ${constraint.max}.`,
-        });
+        push(field, `Field '${field}' must be <= ${constraint.max}.`);
       }
       break;
     }
 
     case "boolean": {
       if (typeof value !== "boolean") {
-        errors.push({ protocolId, field, message: `Field '${field}' must be a boolean.` });
+        push(field, `Field '${field}' must be a boolean.`);
       }
       break;
     }
 
     case "array": {
       if (!Array.isArray(value)) {
-        errors.push({ protocolId, field, message: `Field '${field}' must be an array.` });
+        push(field, `Field '${field}' must be an array.`);
         return;
       }
       if (constraint.minItems !== undefined && value.length < constraint.minItems) {
-        errors.push({
-          protocolId,
-          field,
-          message: `Field '${field}' must contain at least ${constraint.minItems} item(s).`,
-        });
+        push(field, `Field '${field}' must contain at least ${constraint.minItems} item(s).`);
       }
       if (constraint.maxItems !== undefined && value.length > constraint.maxItems) {
-        errors.push({
-          protocolId,
-          field,
-          message: `Field '${field}' must not contain more than ${constraint.maxItems} item(s).`,
-        });
+        push(field, `Field '${field}' must not contain more than ${constraint.maxItems} item(s).`);
       }
       break;
     }
@@ -139,120 +116,7 @@ function applyProtocolConstraint(
     case "enum": {
       const allowed = new Set(constraint.allowedValues);
       if (!allowed.has(value as string)) {
-        errors.push({
-          protocolId,
-          field,
-          message: `Field '${field}' contains unknown value '${String(value)}'.`,
-        });
-      }
-      break;
-    }
-  }
-}
-
-function applyChallengeConstraint(
-  value: unknown,
-  field: string,
-  constraint: FieldConstraint,
-  errors: ChallengeValidationError[],
-  challengeId?: string
-): void {
-  if (value === undefined || value === null) {
-    if (constraint.required) {
-      errors.push({ challengeId, field, message: `Required field '${field}' is missing.` });
-    }
-    return;
-  }
-
-  switch (constraint.type) {
-    case "string": {
-      if (typeof value !== "string") {
-        errors.push({ challengeId, field, message: `Field '${field}' must be a string.` });
-        return;
-      }
-      if (constraint.minLength !== undefined && value.length < constraint.minLength) {
-        errors.push({
-          challengeId,
-          field,
-          message: `Field '${field}' must be at least ${constraint.minLength} characters.`,
-        });
-      }
-      if (constraint.maxLength !== undefined && value.length > constraint.maxLength) {
-        errors.push({
-          challengeId,
-          field,
-          message: `Field '${field}' must not exceed ${constraint.maxLength} characters.`,
-        });
-      }
-      if (constraint.pattern && !constraint.pattern.test(value)) {
-        errors.push({
-          challengeId,
-          field,
-          message: `Field '${field}' does not match the required format.`,
-        });
-      }
-      break;
-    }
-
-    case "number": {
-      if (typeof value !== "number" || isNaN(value)) {
-        errors.push({ challengeId, field, message: `Field '${field}' must be a number.` });
-        return;
-      }
-      if (constraint.min !== undefined && value < constraint.min) {
-        errors.push({
-          challengeId,
-          field,
-          message: `Field '${field}' must be >= ${constraint.min}.`,
-        });
-      }
-      if (constraint.max !== undefined && value > constraint.max) {
-        errors.push({
-          challengeId,
-          field,
-          message: `Field '${field}' must be <= ${constraint.max}.`,
-        });
-      }
-      break;
-    }
-
-    case "boolean": {
-      if (typeof value !== "boolean") {
-        errors.push({ challengeId, field, message: `Field '${field}' must be a boolean.` });
-      }
-      break;
-    }
-
-    case "array": {
-      if (!Array.isArray(value)) {
-        errors.push({ challengeId, field, message: `Field '${field}' must be an array.` });
-        return;
-      }
-      if (constraint.minItems !== undefined && value.length < constraint.minItems) {
-        errors.push({
-          challengeId,
-          field,
-          message: `Field '${field}' must contain at least ${constraint.minItems} item(s).`,
-        });
-      }
-      if (constraint.maxItems !== undefined && value.length > constraint.maxItems) {
-        errors.push({
-          challengeId,
-          field,
-          message: `Field '${field}' must not contain more than ${constraint.maxItems} item(s).`,
-        });
-      }
-      break;
-    }
-
-    case "enum": {
-      const allowed = new Set(constraint.allowedValues);
-      if (!allowed.has(value as string)) {
-        errors.push({
-          challengeId,
-          field,
-          message: `Field '${field}' contains unknown value '${String(value)}'.`,
-        });
+        push(field, `Field '${field}' contains unknown value '${String(value)}'.`);
       }
       break;
     }
@@ -269,20 +133,14 @@ function validateProtocolPhases(
   protocolDurationDays: number,
   errors: ProtocolValidationError[]
 ): void {
+  const push = (field: string, message: string) => errors.push({ protocolId, field, message });
+
   if (phases.length < PROTOCOL_MIN_PHASES) {
-    errors.push({
-      protocolId,
-      field: "phases",
-      message: `A protocol must contain at least ${PROTOCOL_MIN_PHASES} phase(s). Found ${phases.length}.`,
-    });
+    push("phases", `A protocol must contain at least ${PROTOCOL_MIN_PHASES} phase(s). Found ${phases.length}.`);
   }
 
   if (phases.length > PROTOCOL_MAX_PHASES) {
-    errors.push({
-      protocolId,
-      field: "phases",
-      message: `A protocol must not contain more than ${PROTOCOL_MAX_PHASES} phases. Found ${phases.length}.`,
-    });
+    push("phases", `A protocol must not contain more than ${PROTOCOL_MAX_PHASES} phases. Found ${phases.length}.`);
   }
 
   const seenIndices = new Set<number>();
@@ -291,25 +149,24 @@ function validateProtocolPhases(
   phases.forEach((phase, arrayIdx) => {
     const record = phase as unknown as Record<string, unknown>;
     const prefix = `phases[${arrayIdx}]`;
+    const phasePush = (field: string, message: string) => errors.push({ protocolId, field, message });
 
     for (const [field, constraint] of Object.entries(PROTOCOL_PHASE_SCHEMA)) {
-      applyProtocolConstraint(record[field], `${prefix}.${field}`, constraint, errors, protocolId);
+      applyConstraint(record[field], `${prefix}.${field}`, constraint, phasePush);
     }
 
-    // phaseIndex must be >= 0 (cross-field check for strict positive int).
+    // phaseIndex must be a non-negative integer.
     if (typeof phase.phaseIndex === "number") {
       if (!Number.isInteger(phase.phaseIndex) || phase.phaseIndex < 0) {
-        errors.push({
-          protocolId,
-          field: `${prefix}.phaseIndex`,
-          message: `Field '${prefix}.phaseIndex' must be a non-negative integer. Got ${phase.phaseIndex}.`,
-        });
+        phasePush(
+          `${prefix}.phaseIndex`,
+          `Field '${prefix}.phaseIndex' must be a non-negative integer. Got ${phase.phaseIndex}.`
+        );
       } else if (seenIndices.has(phase.phaseIndex)) {
-        errors.push({
-          protocolId,
-          field: `${prefix}.phaseIndex`,
-          message: `Duplicate phaseIndex ${phase.phaseIndex} found at array position ${arrayIdx}.`,
-        });
+        phasePush(
+          `${prefix}.phaseIndex`,
+          `Duplicate phaseIndex ${phase.phaseIndex} found at array position ${arrayIdx}.`
+        );
       } else {
         seenIndices.add(phase.phaseIndex);
       }
@@ -318,11 +175,10 @@ function validateProtocolPhases(
     // durationDays must be a positive integer.
     if (typeof phase.durationDays === "number") {
       if (!Number.isInteger(phase.durationDays) || phase.durationDays < 1) {
-        errors.push({
-          protocolId,
-          field: `${prefix}.durationDays`,
-          message: `Field '${prefix}.durationDays' must be a positive integer. Got ${phase.durationDays}.`,
-        });
+        phasePush(
+          `${prefix}.durationDays`,
+          `Field '${prefix}.durationDays' must be a positive integer. Got ${phase.durationDays}.`
+        );
       } else {
         phaseDurationSum += phase.durationDays;
       }
@@ -332,11 +188,7 @@ function validateProtocolPhases(
     const hasBlends = Array.isArray(phase.blendIds) && phase.blendIds.length > 0;
     const hasOils = Array.isArray(phase.oilIds) && phase.oilIds.length > 0;
     if (!hasBlends && !hasOils) {
-      errors.push({
-        protocolId,
-        field: `${prefix}`,
-        message: `Phase at index ${arrayIdx} must reference at least one blend or oil.`,
-      });
+      phasePush(`${prefix}`, `Phase at index ${arrayIdx} must reference at least one blend or oil.`);
     }
   });
 
@@ -347,11 +199,10 @@ function validateProtocolPhases(
     phaseDurationSum !== protocolDurationDays &&
     typeof protocolDurationDays === "number"
   ) {
-    errors.push({
-      protocolId,
-      field: "durationDays",
-      message: `Protocol durationDays (${protocolDurationDays}) must equal the sum of all phase durationDays (${phaseDurationSum}).`,
-    });
+    push(
+      "durationDays",
+      `Protocol durationDays (${protocolDurationDays}) must equal the sum of all phase durationDays (${phaseDurationSum}).`
+    );
   }
 }
 
@@ -371,19 +222,16 @@ export function validateProtocol(protocol: Protocol): ProtocolValidationResult {
   const protocolId =
     typeof protocol?.protocolId === "string" ? protocol.protocolId : "(unknown)";
   const record = protocol as unknown as Record<string, unknown>;
+  const push = (field: string, message: string) => errors.push({ protocolId, field, message });
 
   // Top-level field constraints.
   for (const [field, constraint] of Object.entries(PROTOCOL_SCHEMA)) {
-    applyProtocolConstraint(record[field], field, constraint, errors, protocolId);
+    applyConstraint(record[field], field, constraint, push);
   }
 
   // Semantic version check (LOCK-005).
   if (typeof protocol.version === "string" && !SEMVER_PATTERN.test(protocol.version)) {
-    errors.push({
-      protocolId,
-      field: "version",
-      message: `Protocol version '${protocol.version}' does not follow semantic versioning (MAJOR.MINOR.PATCH).`,
-    });
+    push("version", `Protocol version '${protocol.version}' does not follow semantic versioning (MAJOR.MINOR.PATCH).`);
   }
 
   // durationDays must be a positive integer.
@@ -391,32 +239,19 @@ export function validateProtocol(protocol: Protocol): ProtocolValidationResult {
     typeof protocol.durationDays === "number" &&
     (!Number.isInteger(protocol.durationDays) || protocol.durationDays < PROTOCOL_MIN_DURATION_DAYS)
   ) {
-    errors.push({
-      protocolId,
-      field: "durationDays",
-      message: `Protocol durationDays must be a positive integer >= ${PROTOCOL_MIN_DURATION_DAYS}.`,
-    });
+    push("durationDays", `Protocol durationDays must be a positive integer >= ${PROTOCOL_MIN_DURATION_DAYS}.`);
   }
 
   if (
     typeof protocol.durationDays === "number" &&
     protocol.durationDays > PROTOCOL_MAX_DURATION_DAYS
   ) {
-    errors.push({
-      protocolId,
-      field: "durationDays",
-      message: `Protocol durationDays must not exceed ${PROTOCOL_MAX_DURATION_DAYS}.`,
-    });
+    push("durationDays", `Protocol durationDays must not exceed ${PROTOCOL_MAX_DURATION_DAYS}.`);
   }
 
   // Validate phases array.
   if (Array.isArray(protocol.phases)) {
-    validateProtocolPhases(
-      protocol.phases,
-      protocolId,
-      protocol.durationDays,
-      errors
-    );
+    validateProtocolPhases(protocol.phases, protocolId, protocol.durationDays, errors);
   }
 
   return { valid: errors.length === 0, errors };
@@ -470,10 +305,11 @@ export function validateChallenge(challenge: Challenge): ChallengeValidationResu
   const challengeId =
     typeof challenge?.challengeId === "string" ? challenge.challengeId : "(unknown)";
   const record = challenge as unknown as Record<string, unknown>;
+  const push = (field: string, message: string) => errors.push({ challengeId, field, message });
 
   // Top-level field constraints.
   for (const [field, constraint] of Object.entries(CHALLENGE_SCHEMA)) {
-    applyChallengeConstraint(record[field], field, constraint, errors, challengeId);
+    applyConstraint(record[field], field, constraint, push);
   }
 
   // dueDay must be a positive integer.
@@ -481,27 +317,15 @@ export function validateChallenge(challenge: Challenge): ChallengeValidationResu
     typeof challenge.dueDay === "number" &&
     (!Number.isInteger(challenge.dueDay) || challenge.dueDay < 1)
   ) {
-    errors.push({
-      challengeId,
-      field: "dueDay",
-      message: `Challenge dueDay must be a positive integer >= 1. Got ${challenge.dueDay}.`,
-    });
+    push("dueDay", `Challenge dueDay must be a positive integer >= 1. Got ${challenge.dueDay}.`);
   }
 
   // Optional response field — if present, must be a non-empty string.
   if (challenge.response !== undefined) {
     if (typeof challenge.response !== "string") {
-      errors.push({
-        challengeId,
-        field: "response",
-        message: `Field 'response' must be a string when provided.`,
-      });
+      push("response", `Field 'response' must be a string when provided.`);
     } else if (challenge.response.length === 0) {
-      errors.push({
-        challengeId,
-        field: "response",
-        message: `Field 'response' must not be an empty string when provided.`,
-      });
+      push("response", `Field 'response' must not be an empty string when provided.`);
     }
   }
 
