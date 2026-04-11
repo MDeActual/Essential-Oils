@@ -238,9 +238,7 @@ function validateBlendOilEntries(
     errors.push({
       blendId,
       field: "oils",
-      message: `A blend must have exactly one oil with role '${
-        "primary"
-      }'. Found ${primaryEntries.length}.`,
+      message: `A blend must have exactly one oil with role 'primary'. Found ${primaryEntries.length}.`,
     });
   }
 }

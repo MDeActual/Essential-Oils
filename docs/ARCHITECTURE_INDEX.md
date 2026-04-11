@@ -75,6 +75,8 @@ This index is the authoritative map of all files, modules, and documents in the 
 
 ---
 
+## Canonical Package
+
 | File | Description |
 |------|-------------|
 | `phyto_ai_architecture_v11_CANONICAL.zip` | v11 canonical architecture package (reference only) |
