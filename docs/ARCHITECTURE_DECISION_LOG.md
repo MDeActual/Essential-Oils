@@ -221,6 +221,8 @@ The challenge engine rule evaluation logic (M-003) — the proprietary system go
 - The Contributor Analytics Agent may now call `runProtocolSegmentPipeline()` to obtain per-protocol structural metrics for advisory reporting; signal extraction remains in the moat-protected layer.
 
 ---
+
+### ADR-009: Implement src/simulation/ — Phase 1 Synthetic Simulation Layer
 **Status**: ACCEPTED
 **Date**: 2026-04-11
 **Deciders**: Worker Agent C (Phase 1 continuation; Swarm Orchestrator authority)
