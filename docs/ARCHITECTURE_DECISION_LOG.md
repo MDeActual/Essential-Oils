@@ -74,3 +74,28 @@ This log records all significant architectural decisions made for the Phyto.ai p
 **Consequences**: Public API design must be reviewed against moat boundaries. Any interface that risks exposing protected logic must be rejected or restructured.
 
 ---
+
+### ADR-004: Implement src/ontology/ — Phase 1 Core Domain (Oil Ontology)
+**Status**: ACCEPTED
+**Date**: 2026-04-11
+**Deciders**: Swarm Orchestrator (Phase 1 kickoff authorized by Human Project Lead)
+
+**Context**: Phase 0 is complete. Phase 1 begins with the first dependency-safe module: `src/ontology/`. The oil ontology is the foundational layer that all other modules (protocol engine, blend intelligence, analytics) will depend on. No prior source code exists; this is the inaugural module.
+
+**Decision**: Implement `src/ontology/` in TypeScript with the following files:
+- `types.ts` — canonical type definitions aligned with DOMAIN_MODEL.md Oil entity
+- `schema.ts` — field-level constraint schema and canonical OilId registry
+- `oils.ts` — internal registry of 20 seed oils with accessor functions
+- `validation.ts` — `validateOil()` and `validateOilRegistry()` with business rules
+- `index.ts` — public module interface
+- `__tests__/ontology.test.ts` — 115 integrity tests
+
+Initialize Node.js/TypeScript project with `package.json`, `tsconfig.json`, and Jest test runner.
+
+**Consequences**:
+- All consuming modules must import oil entities through `src/ontology/index.ts`.
+- The full oil registry (getAllOils) is for internal use only — must not be forwarded to external APIs (M-005).
+- New oils require an OilId union update in `types.ts`, a registry entry in `oils.ts`, and passing tests.
+- Blend synergy scoring and protocol generation are deliberately excluded from this module (LOCK-002).
+
+---

@@ -1,0 +1,40 @@
+{
+  "name": "essential-oils",
+  "version": "1.0.0",
+  "description": "Phyto.ai Architecture Package (v11 CANONICAL) Includes environment variable spec and example configuration files.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "roots": ["<rootDir>/src"],
+    "testMatch": ["**/__tests__/**/*.test.ts"],
+    "collectCoverageFrom": ["src/**/*.ts", "!src/**/__tests__/**"]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MDeActual/Essential-Oils.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/MDeActual/Essential-Oils/issues"
+  },
+  "homepage": "https://github.com/MDeActual/Essential-Oils#readme",
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.6.0",
+    "jest": "^30.3.0",
+    "ts-jest": "^29.4.9",
+    "typescript": "^6.0.2"
+  }
+}
