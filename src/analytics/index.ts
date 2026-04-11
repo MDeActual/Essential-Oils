@@ -22,6 +22,8 @@ export type {
   RecordId,
   CohortMetrics,
   AnalyticsPipelineResult,
+  ProtocolCohortSegment,
+  ProtocolSegmentReport,
   AnalyticsValidationError,
   AnalyticsValidationResult,
   AnalyticsError,
@@ -50,4 +52,6 @@ export {
   filterAnalyticsEligible,
   aggregateCohortMetrics,
   runAnalyticsPipeline,
+  segmentByProtocol,
+  runProtocolSegmentPipeline,
 } from "./pipeline";

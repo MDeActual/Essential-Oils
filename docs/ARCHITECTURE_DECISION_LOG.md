@@ -199,6 +199,29 @@ The challenge engine rule evaluation logic (M-003) — the proprietary system go
 
 ---
 
+### ADR-010: Extend src/analytics/ — Protocol Cohort Segmentation Slice
+**Status**: ACCEPTED
+**Date**: 2026-04-11
+**Deciders**: Swarm Orchestrator (Phase 2 continuation; Worker Agent)
+
+**Context**: Phase 2 `src/analytics/` baseline (ADR-008) delivered structural validation and cohort aggregation across all records. The next dependency-safe slice adds per-protocol cohort segmentation: grouping analytics-eligible records by `protocolId` and producing per-protocol `CohortMetrics`. This enables the Contributor Analytics Agent to surface which protocols have higher adherence and challenge completion rates without exposing the M-004 signal extraction methodology.
+
+**Decision**: Extend `src/analytics/` with the following additions:
+- `types.ts` — add `ProtocolCohortSegment` (per-protocol metrics + protocolId) and `ProtocolSegmentReport` (full segmentation pipeline result) types
+- `pipeline.ts` — add `segmentByProtocol()` (group eligible records by protocolId, produce sorted `ProtocolCohortSegment[]`) and `runProtocolSegmentPipeline()` (validates → filters → segments in one call)
+- `index.ts` — export new types and functions
+- `__tests__/analytics.test.ts` — 15 new tests covering segmentByProtocol() and runProtocolSegmentPipeline()
+- `docs/ARCHITECTURE_INDEX.md` — updated analytics section to reflect new functions and types
+
+**Consequences**:
+- All existing analytics tests continue to pass (471 total: 456 prior + 15 new).
+- Per-protocol segmentation is structural only; no protocol ranking, scoring, or comparative signaling is implemented (M-004 boundary maintained).
+- Excluded records are tracked at the report level (`totalExcludedRecords`) rather than attributed to specific protocol segments — preventing any inference about which protocols generated low-adherence records.
+- `segmentByProtocol()` output is deterministically sorted by `protocolId` to support stable downstream consumers.
+- The Contributor Analytics Agent may now call `runProtocolSegmentPipeline()` to obtain per-protocol structural metrics for advisory reporting; signal extraction remains in the moat-protected layer.
+
+---
+
 ### ADR-009: Implement src/simulation/ — Phase 1 Synthetic Simulation Layer
 **Status**: ACCEPTED
 **Date**: 2026-04-11
