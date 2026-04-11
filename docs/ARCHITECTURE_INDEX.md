@@ -48,7 +48,8 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `src/ontology/` | Oil and remedy ontology definitions | **Complete (Phase 1)** |
 | `src/blend/` | Blend entity types, schema, and validation | **Complete (Phase 1)** |
 | `src/protocol/` | Protocol and Challenge entity types, schema, and validation | **Complete (Phase 1)** |
-| `src/analytics/` | Contributor analytics pipeline | Planned |
+| `src/challenge/` | Challenge lifecycle, state transitions, participation and completion records | **Complete (Phase 1)** |
+| `src/analytics/` | Contributor analytics pipeline | **In Progress (Phase 2)** |
 | `src/simulation/` | Synthetic simulation environment | **Complete (Phase 1)** |
 | `src/api/` | External API layer | Planned |
 
@@ -82,6 +83,27 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `src/protocol/validation.ts` | validateProtocol(), validateProtocolCollection(), validateChallenge(), validateChallengeCollection() with business rules |
 | `src/protocol/index.ts` | Public module interface |
 | `src/protocol/__tests__/protocol.test.ts` | Protocol and Challenge integrity tests (68 tests) |
+
+### /src/challenge — Files
+
+| File | Description |
+|------|-------------|
+| `src/challenge/types.ts` | TypeScript types: ChallengeLifecycleEventType enum; ChallengeTransition, ChallengeParticipation, ChallengeCompletionRecord types; validation result types |
+| `src/challenge/schema.ts` | VALID_TRANSITIONS state machine map; field-level constraint schemas for participation and completion records; CHALLENGE_RESPONSE_MAX_LENGTH, CHALLENGE_SKIP_REASON_MAX_LENGTH constants |
+| `src/challenge/validation.ts` | validateChallengeTransition(), validateChallengeParticipation(), validateChallengeCompletionRecord(), validateChallengeCompletionRecordCollection() with business rules |
+| `src/challenge/index.ts` | Public module interface |
+| `src/challenge/__tests__/challenge.test.ts` | Challenge lifecycle, participation, and completion integrity tests |
+
+### /src/analytics — Files
+
+| File | Description |
+|------|-------------|
+| `src/analytics/types.ts` | TypeScript types: DataOrigin, ExclusionStatus, ExclusionReason enums; ContributorRecord, CohortMetrics, AnalyticsPipelineResult, validation result types |
+| `src/analytics/schema.ts` | Field-level constraint schema; ADHERENCE_EXCLUSION_THRESHOLD constant |
+| `src/analytics/validation.ts` | validateContributorRecord() and validateContributorRecordCollection() enforcing LOCK-003 rules |
+| `src/analytics/pipeline.ts` | filterAnalyticsEligible(), aggregateCohortMetrics(), runAnalyticsPipeline() — structural aggregation (M-004 boundary respected) |
+| `src/analytics/index.ts` | Public module interface |
+| `src/analytics/__tests__/analytics.test.ts` | Contributor analytics validation and pipeline tests |
 
 ### /src/simulation — Files
 

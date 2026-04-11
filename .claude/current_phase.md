@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-**Phase**: 1 — Core Domain Implementation
+**Phase**: 2 — Intelligence Layer (Contributor Analytics)
 **Status**: IN PROGRESS
 **Started**: 2026-04-11
 **Target Completion**: TBD
@@ -15,26 +15,22 @@ Phase 1 implements the source modules defined in `docs/ARCHITECTURE_INDEX.md`, s
 
 ---
 
-## Phase 1 Deliverables
+## Phase 2 Deliverables
 
 | Deliverable | Status |
 |-------------|--------|
-| `src/ontology/` — oil ontology structures, schema, validation | ✅ Complete |
-| `src/blend/` — blend entity types, schema, validation | ✅ Complete |
-| `src/protocol/` — protocol and challenge entity types, schema, validation | ✅ Complete |
-| `src/analytics/` — contributor analytics pipeline | ⬜ Planned |
-| `src/simulation/` — synthetic simulation environment | ✅ Complete |
-| `src/api/` — external API layer | ⬜ Planned |
+| `src/analytics/` — contributor analytics pipeline (types, schema, validation, pipeline) | IN PROGRESS |
 
 ---
 
-## Phase 1 Exit Criteria
+## Phase 2 Exit Criteria
 
-Phase 1 is complete when:
-1. All planned source modules are implemented with passing tests.
-2. All modules respect moat boundaries (LOCK-002, M-001 through M-005).
-3. Human project lead has reviewed Phase 1 implementation.
-4. Phase 2 kickoff is authorized.
+Phase 2 is complete when:
+1. `src/analytics/` is implemented with passing tests.
+2. Module enforces LOCK-003 data integrity rules.
+3. M-004 (Population Analytics Signal Model) boundaries are respected.
+4. Human project lead has reviewed Phase 2 implementation.
+5. Phase 3 kickoff is authorized.
 
 ---
 
@@ -43,4 +39,17 @@ Phase 1 is complete when:
 | Phase | Name | Status | Completed |
 |-------|------|--------|-----------|
 | 0 | Architecture Foundation | ✅ Complete | 2026-04-10 |
-| 1 | Core Domain Implementation | IN PROGRESS | — |
+| 1 | Core Domain Implementation | ✅ Complete | 2026-04-11 |
+| 2 | Intelligence Layer (Contributor Analytics) | IN PROGRESS | — |
+
+---
+
+## Phase 1 Summary (Complete)
+
+| Deliverable | Status |
+|-------------|--------|
+| `src/ontology/` — oil ontology structures, schema, validation | ✅ Complete |
+| `src/blend/` — blend entity types, schema, validation | ✅ Complete |
+| `src/protocol/` — protocol and challenge entity types, schema, validation | ✅ Complete |
+| `src/challenge/` — challenge lifecycle, state transitions, participation and completion records | ✅ Complete |
+| `src/simulation/` — synthetic simulation environment | ✅ Complete |
