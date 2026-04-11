@@ -12,7 +12,7 @@
 
 **Architecture Package Version**: v11 CANONICAL
 **Governance Layer**: Architecture Control Layer v1.0 (established 2026-04-10)
-**Development Status**: Phase 1 in progress — `src/ontology/` and `src/blend/` complete; remaining modules planned.
+**Development Status**: Phase 1 in progress — `src/ontology/`, `src/blend/`, and `src/protocol/` complete; `src/analytics/`, `src/simulation/`, and `src/api/` planned.
 
 ---
 
@@ -39,7 +39,6 @@
 
 | Module | Purpose |
 |--------|---------|
-| `src/protocol/` | Protocol recommendation engine |
 | `src/analytics/` | Contributor analytics pipeline |
 | `src/simulation/` | Synthetic simulation environment |
 | `src/api/` | External API layer |

@@ -124,3 +124,28 @@ The synergy scoring algorithm (M-001) is intentionally excluded. The `synergySco
 - Protocol engine (`src/protocol/`) can now reference Blend types from this module.
 
 ---
+
+### ADR-006: Implement src/protocol/ — Phase 1 Protocol Entity Layer
+**Status**: ACCEPTED
+**Date**: 2026-04-11
+**Deciders**: Swarm Orchestrator (Phase 1 continuation authorized by Human Project Lead)
+
+**Context**: Phase 1 `src/ontology/` and `src/blend/` are complete. The next dependency-safe module is `src/protocol/`, which depends on the finished ontology and blend layers. The Protocol and Challenge entities are defined in `docs/DOMAIN_MODEL.md` and are foundational to the analytics, simulation, and API layers planned for later Phase 1 work.
+
+**Decision**: Implement `src/protocol/` in TypeScript with the following files:
+- `types.ts` — ProtocolStatus, ChallengeType, ChallengeCompletionStatus enums; ProtocolPhase, Protocol, Challenge, and validation result types
+- `schema.ts` — field-level constraint schema, constants (PROTOCOL_MIN_PHASES, PROTOCOL_MAX_PHASES, PROTOCOL_MIN_DURATION_DAYS, PROTOCOL_MAX_DURATION_DAYS, SEMVER_PATTERN)
+- `validation.ts` — `validateProtocol()`, `validateProtocolCollection()`, `validateChallenge()`, `validateChallengeCollection()` with business rules
+- `index.ts` — public module interface
+- `__tests__/protocol.test.ts` — comprehensive tests
+
+The protocol generation algorithm (M-002) and challenge engine rules (M-003) are intentionally excluded. This module handles only structural types, schema constraints, and validation.
+
+**Consequences**:
+- All consuming modules must import protocol entities through `src/protocol/index.ts`.
+- The protocol generation algorithm (M-002) must remain in the moat-protected layer and must not be reconstructed here.
+- The challenge engine rule evaluation logic (M-003) must not be exposed here; only the Challenge entity type and structural validation are permitted.
+- Protocol versions must follow semantic versioning per LOCK-005.
+- Analytics (`src/analytics/`) and simulation (`src/simulation/`) modules can now reference Protocol and Challenge types from this module.
+
+---
