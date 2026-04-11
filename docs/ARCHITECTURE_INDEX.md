@@ -47,7 +47,7 @@ This index is the authoritative map of all files, modules, and documents in the 
 |--------|-------------|--------|
 | `src/ontology/` | Oil and remedy ontology definitions | **Complete (Phase 1)** |
 | `src/blend/` | Blend entity types, schema, and validation | **Complete (Phase 1)** |
-| `src/protocol/` | Protocol recommendation engine | Planned |
+| `src/protocol/` | Protocol and Challenge entity types, schema, and validation | **Complete (Phase 1)** |
 | `src/analytics/` | Contributor analytics pipeline | Planned |
 | `src/simulation/` | Synthetic simulation environment | Planned |
 | `src/api/` | External API layer | Planned |
@@ -72,6 +72,16 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `src/blend/validation.ts` | validateBlend() and validateBlendCollection() with business rules |
 | `src/blend/index.ts` | Public module interface |
 | `src/blend/__tests__/blend.test.ts` | Blend integrity and validation tests (44 tests) |
+
+### /src/protocol — Files
+
+| File | Description |
+|------|-------------|
+| `src/protocol/types.ts` | TypeScript types: ProtocolStatus, ChallengeType, ChallengeCompletionStatus enums; ProtocolPhase, Protocol, Challenge, validation result types |
+| `src/protocol/schema.ts` | Field-level constraint schema; PROTOCOL_MIN_PHASES, PROTOCOL_MAX_PHASES, PROTOCOL_MIN/MAX_DURATION_DAYS, SEMVER_PATTERN constants |
+| `src/protocol/validation.ts` | validateProtocol(), validateProtocolCollection(), validateChallenge(), validateChallengeCollection() with business rules |
+| `src/protocol/index.ts` | Public module interface |
+| `src/protocol/__tests__/protocol.test.ts` | Protocol and Challenge integrity tests (68 tests) |
 
 ---
 

@@ -21,7 +21,7 @@ Phase 1 implements the source modules defined in `docs/ARCHITECTURE_INDEX.md`, s
 |-------------|--------|
 | `src/ontology/` — oil ontology structures, schema, validation | ✅ Complete |
 | `src/blend/` — blend entity types, schema, validation | ✅ Complete |
-| `src/protocol/` — protocol recommendation engine | ⬜ Planned |
+| `src/protocol/` — protocol and challenge entity types, schema, validation | ✅ Complete |
 | `src/analytics/` — contributor analytics pipeline | ⬜ Planned |
 | `src/simulation/` — synthetic simulation environment | ⬜ Planned |
 | `src/api/` — external API layer | ⬜ Planned |
