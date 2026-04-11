@@ -19,16 +19,19 @@ Phase 1 implements the source modules defined in `docs/ARCHITECTURE_INDEX.md`, s
 
 | Deliverable | Status |
 |-------------|--------|
-| `src/analytics/` — contributor analytics pipeline (types, schema, validation, pipeline) | IN PROGRESS |
+| `src/analytics/` — contributor analytics pipeline (types, schema, validation, pipeline) | ✅ Complete |
+| `src/analytics/signals.ts` — adherence, protocol completion, oil usage frequency, challenge participation signals | ✅ Complete |
+| `src/analytics/scoring.ts` — protocol effectiveness, blend synergy influence, contributor reliability scores | ✅ Complete |
+| `src/analytics/aggregator.ts` — contributor activity, protocol outcomes, signal normalization | ✅ Complete |
 
 ---
 
 ## Phase 2 Exit Criteria
 
 Phase 2 is complete when:
-1. `src/analytics/` is implemented with passing tests.
-2. Module enforces LOCK-003 data integrity rules.
-3. M-004 (Population Analytics Signal Model) boundaries are respected.
+1. `src/analytics/` is implemented with passing tests. ✅
+2. Module enforces LOCK-003 data integrity rules. ✅
+3. M-004 (Population Analytics Signal Model) boundaries are respected. ✅
 4. Human project lead has reviewed Phase 2 implementation.
 5. Phase 3 kickoff is authorized.
 
@@ -40,7 +43,7 @@ Phase 2 is complete when:
 |-------|------|--------|-----------|
 | 0 | Architecture Foundation | ✅ Complete | 2026-04-10 |
 | 1 | Core Domain Implementation | ✅ Complete | 2026-04-11 |
-| 2 | Intelligence Layer (Contributor Analytics) | IN PROGRESS | — |
+| 2 | Intelligence Layer (Contributor Analytics) | ✅ Complete | 2026-04-11 |
 
 ---
 

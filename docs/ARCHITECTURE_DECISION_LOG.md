@@ -199,7 +199,31 @@ The challenge engine rule evaluation logic (M-003) — the proprietary system go
 
 ---
 
-### ADR-009: Implement src/simulation/ — Phase 1 Synthetic Simulation Layer
+### ADR-010: Implement Analytics Intelligence Signal Layer — Phase 2
+**Status**: ACCEPTED
+**Date**: 2026-04-11
+**Deciders**: Swarm Orchestrator (Phase 2 continuation; authorized by Human Project Lead)
+
+**Context**: ADR-008 established the `src/analytics/` contributor analytics pipeline (types, schema, validation, pipeline). Phase 2 continues with the analytics intelligence signal layer: structured signals, structural scoring, and contributor/protocol aggregation that convert eligible contributor records into observable metrics consumed by protocol scoring and blend optimization.
+
+**Decision**: Extend `src/analytics/` with the following additional files:
+- `signals.ts` — `extractAdherenceSignals()`, `extractProtocolCompletionSignals()`, `extractOilUsageFrequencySignals()`, `extractChallengeParticipationSignals()` and their per-record single-record variants
+- `scoring.ts` — `computeProtocolEffectivenessScore()`, `computeBlendSynergyInfluenceSignals()`, `computeContributorReliabilityScore()`
+- `aggregator.ts` — `aggregateContributorActivity()`, `aggregateProtocolOutcomes()`, `normalizeSignalValue()`
+- New signal interfaces added to `types.ts`: `AdherenceSignal`, `ProtocolCompletionSignal`, `OilUsageFrequencySignal`, `ChallengeParticipationSignal`, `ProtocolEffectivenessScore`, `BlendSynergyInfluenceSignal`, `ContributorReliabilityScore`, `ContributorActivitySummary`, `ProtocolOutcomeSummary`
+- Unit tests: `signals.test.ts`, `scoring.test.ts`, `aggregator.test.ts` (69 tests)
+
+All functions operate exclusively on analytics-eligible records (LOCK-003). The moat-protected signal extraction methodology (M-004) and synergy scoring matrix (M-001) are not implemented in any of these modules.
+
+**Consequences**:
+- All signal extraction, scoring, and aggregation must pass LOCK-003-eligible records only.
+- `BlendSynergyInfluenceSignal` is a structural co-occurrence signal; it must not be confused with the moat-protected synergy scoring matrix (M-001).
+- `normalizeSignalValue()` is a general-purpose utility for any 0–1 normalization; it does not encode any proprietary weighting.
+- The `src/analytics/index.ts` public surface now includes all signal, scoring, and aggregation exports.
+- Phase 2 analytics deliverable is complete pending human review.
+
+---
+
 **Status**: ACCEPTED
 **Date**: 2026-04-11
 **Deciders**: Worker Agent C (Phase 1 continuation; Swarm Orchestrator authority)
