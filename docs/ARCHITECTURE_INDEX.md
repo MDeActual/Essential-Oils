@@ -48,7 +48,7 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `src/ontology/` | Oil and remedy ontology definitions | **Complete (Phase 1)** |
 | `src/blend/` | Blend entity types, schema, and validation | **Complete (Phase 1)** |
 | `src/protocol/` | Protocol and Challenge entity types, schema, and validation | **Complete (Phase 1)** |
-| `src/analytics/` | Contributor analytics pipeline | Planned |
+| `src/analytics/` | Contributor analytics pipeline | **In Progress (Phase 2)** |
 | `src/simulation/` | Synthetic simulation environment | Planned |
 | `src/api/` | External API layer | Planned |
 
@@ -82,6 +82,17 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `src/protocol/validation.ts` | validateProtocol(), validateProtocolCollection(), validateChallenge(), validateChallengeCollection() with business rules |
 | `src/protocol/index.ts` | Public module interface |
 | `src/protocol/__tests__/protocol.test.ts` | Protocol and Challenge integrity tests (68 tests) |
+
+### /src/analytics — Files
+
+| File | Description |
+|------|-------------|
+| `src/analytics/types.ts` | TypeScript types: DataOrigin, ExclusionStatus, ExclusionReason enums; ContributorRecord, CohortMetrics, AnalyticsPipelineResult, validation result types |
+| `src/analytics/schema.ts` | Field-level constraint schema; ADHERENCE_EXCLUSION_THRESHOLD constant |
+| `src/analytics/validation.ts` | validateContributorRecord() and validateContributorRecordCollection() enforcing LOCK-003 rules |
+| `src/analytics/pipeline.ts` | filterAnalyticsEligible(), aggregateCohortMetrics(), runAnalyticsPipeline() — structural aggregation (M-004 boundary respected) |
+| `src/analytics/index.ts` | Public module interface |
+| `src/analytics/__tests__/analytics.test.ts` | Contributor analytics validation and pipeline tests |
 
 ---
 

@@ -12,7 +12,7 @@
 
 **Architecture Package Version**: v11 CANONICAL
 **Governance Layer**: Architecture Control Layer v1.0 (established 2026-04-10)
-**Development Status**: Phase 1 in progress — `src/ontology/`, `src/blend/`, and `src/protocol/` complete; `src/analytics/`, `src/simulation/`, and `src/api/` planned.
+**Development Status**: Phase 2 in progress — `src/ontology/`, `src/blend/`, `src/protocol/` complete (Phase 1); `src/analytics/` in progress (Phase 2); `src/simulation/` and `src/api/` planned.
 
 ---
 
@@ -35,13 +35,16 @@
 
 ---
 
-## Planned Source Modules (Not Yet Built)
+## Source Modules Status
 
-| Module | Purpose |
-|--------|---------|
-| `src/analytics/` | Contributor analytics pipeline |
-| `src/simulation/` | Synthetic simulation environment |
-| `src/api/` | External API layer |
+| Module | Purpose | Status |
+|--------|---------|--------|
+| `src/ontology/` | Oil ontology structures, schema, validation | ✅ Complete (Phase 1) |
+| `src/blend/` | Blend entity types, schema, validation | ✅ Complete (Phase 1) |
+| `src/protocol/` | Protocol and Challenge entity types, schema, validation | ✅ Complete (Phase 1) |
+| `src/analytics/` | Contributor analytics pipeline | 🔄 In Progress (Phase 2) |
+| `src/simulation/` | Synthetic simulation environment | ⬜ Planned (Phase 3) |
+| `src/api/` | External API layer | ⬜ Planned (Phase 4) |
 
 ---
 
