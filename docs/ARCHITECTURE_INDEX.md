@@ -41,16 +41,27 @@ This index is the authoritative map of all files, modules, and documents in the 
 
 ---
 
-## /src — Application Source (Planned)
+## /src — Application Source
 
 | Module | Description | Status |
 |--------|-------------|--------|
+| `src/ontology/` | Oil and remedy ontology definitions | **Complete (Phase 1)** |
 | `src/protocol/` | Protocol recommendation engine | Planned |
 | `src/blend/` | Blend intelligence and synergy scoring | Planned |
 | `src/analytics/` | Contributor analytics pipeline | Planned |
 | `src/simulation/` | Synthetic simulation environment | Planned |
 | `src/api/` | External API layer | Planned |
-| `src/ontology/` | Oil and remedy ontology definitions | Planned |
+
+### /src/ontology — Files
+
+| File | Description |
+|------|-------------|
+| `src/ontology/types.ts` | TypeScript types: Oil, OilId, enums, ChemicalConstituent, SafetyProfile, OntologyTags |
+| `src/ontology/schema.ts` | Field-level constraint schema for validation; canonical OilId set |
+| `src/ontology/oils.ts` | Canonical oil registry with 20 seed oils and accessor functions |
+| `src/ontology/validation.ts` | validateOil() and validateOilRegistry() with business rules |
+| `src/ontology/index.ts` | Public module interface |
+| `src/ontology/__tests__/ontology.test.ts` | Ontology integrity tests (115 tests) |
 
 ---
 
