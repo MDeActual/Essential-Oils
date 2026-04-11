@@ -173,5 +173,25 @@ The challenge engine rule evaluation logic (M-003) — the proprietary system go
 - Completed challenges must carry a non-empty `response` field in their completion record.
 - The challenge engine sequencing and personalization heuristics (M-003) must not be reconstructed in any public module.
 - Analytics (`src/analytics/`) and simulation (`src/simulation/`) can now reference challenge lifecycle types from this module.
+### ADR-007: Implement src/analytics/ — Phase 2 Contributor Analytics Pipeline
+**Status**: ACCEPTED
+**Date**: 2026-04-11
+**Deciders**: Swarm Orchestrator (Phase 2 kickoff; Phase 1 complete)
+
+**Context**: Phase 1 is complete (`src/ontology/`, `src/blend/`, `src/protocol/` all implemented with passing tests). Phase 2 begins with `src/analytics/`, the next dependency-safe module. This module depends on the finished domain layer (Protocol, Blend, ontology types) and implements the Contributor Record entity with LOCK-003 data integrity enforcement. The Population Analytics Signal Model (M-004) is moat-protected and must not be implemented here.
+
+**Decision**: Implement `src/analytics/` in TypeScript with the following files:
+- `types.ts` — ContributorRecord, DataOrigin, ExclusionStatus, ExclusionReason enums; aggregation result types (CohortMetrics, AnalyticsPipelineResult)
+- `schema.ts` — field-level constraint schema, ADHERENCE_EXCLUSION_THRESHOLD constant (50)
+- `validation.ts` — `validateContributorRecord()` and `validateContributorRecordCollection()` enforcing LOCK-003 rules
+- `pipeline.ts` — `filterAnalyticsEligible()`, `aggregateCohortMetrics()`, `runAnalyticsPipeline()` — structural aggregation without signal extraction methodology (M-004)
+- `index.ts` — public module interface with M-004 moat notice
+- `__tests__/analytics.test.ts` — comprehensive tests covering validation and pipeline logic
+
+**Consequences**:
+- All analytics data flows must pass through `validateContributorRecord()` before processing.
+- Only `real_contributor` records with `adherence_score >= 50` and `exclusion_status: included` are pipeline-eligible (LOCK-003).
+- The signal extraction methodology (M-004) must remain in the moat-protected layer; this module provides only structural aggregation (count, averages, breakdowns).
+- Simulation module (`src/simulation/`) can now reference ContributorRecord types and the pipeline to produce isolated test runs.
 
 ---
