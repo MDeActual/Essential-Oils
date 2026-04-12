@@ -247,3 +247,36 @@ The analytics signal model (M-004) is intentionally excluded. This module handle
 - Simulation data must never be passed to production analytics without calling `assertSyntheticIsolation()` first.
 
 ---
+
+### ADR-011: Implement src/api/ — Phase 3 External API Layer (Read-Only)
+**Status**: ACCEPTED
+**Date**: 2026-04-12
+**Deciders**: Swarm Orchestrator (Phase 3 kickoff authorized by Human Project Lead)
+
+**Context**: Phase 1 (core domain modules) and Phase 2 (analytics intelligence layer) are complete. Phase 3 begins with `src/api/`, which exposes a clean read-only HTTP interface over the existing domain and analytics modules without duplicating business logic. The API must enforce LOCK-002 (no moat-protected internals exposed) and LOCK-003 (all analytics data flows through the validated pipeline).
+
+**Decision**: Implement `src/api/` using Express with the following files:
+- `server.ts` — Express application factory (`createApp`); mounts all routes and error handling
+- `types.ts` — shared API response envelope types (ApiSuccessResponse, ApiErrorResponse, endpoint payload types)
+- `index.ts` — public module interface
+- `routes/health.ts` — GET /health
+- `routes/protocols.ts` — GET /protocols, GET /protocols/:id
+- `routes/analytics.ts` — GET /analytics/protocols, GET /analytics/protocols/:id
+- `controllers/healthController.ts` — liveness probe handler
+- `controllers/protocolController.ts` — protocol list and detail handlers (delegates to protocolStore)
+- `controllers/protocolStore.ts` — in-memory read-only protocol registry (seed data)
+- `controllers/analyticsController.ts` — analytics handlers (delegates to `runProtocolSegmentPipeline`)
+- `controllers/analyticsStore.ts` — in-memory read-only contributor record registry (seed data, LOCK-003 compliant)
+- `middleware/errorHandler.ts` — global error handler (ValidationError → 400, NotFoundError → 404, fallback → 500)
+- `middleware/validateId.ts` — canonical identifier validation for `:id` path parameters
+- `__tests__/api.test.ts` — 26 integration tests covering all endpoints
+
+**Consequences**:
+- The API is strictly read-only; only GET routes are registered (no POST/PUT/DELETE).
+- All analytics data flows through `runProtocolSegmentPipeline()` which enforces LOCK-003 validation before any response is produced.
+- No moat-protected fields (generation algorithm, synergy scoring, challenge engine rules) appear in any response (LOCK-002, M-002, M-003, M-004).
+- Phase detail responses omit `blendIds`, `oilIds`, and `challengeIds`; only structural counts and user-facing fields are surfaced.
+- The in-memory stores are intentionally minimal stubs; a future ADR will introduce a database-backed repository layer when persistence is required.
+- All 471 existing domain/analytics tests continue to pass; 26 new API integration tests are added (497 total).
+
+---

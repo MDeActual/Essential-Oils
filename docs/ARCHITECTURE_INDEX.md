@@ -49,9 +49,9 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `src/blend/` | Blend entity types, schema, and validation | **Complete (Phase 1)** |
 | `src/protocol/` | Protocol and Challenge entity types, schema, and validation | **Complete (Phase 1)** |
 | `src/challenge/` | Challenge lifecycle, state transitions, participation and completion records | **Complete (Phase 1)** |
-| `src/analytics/` | Contributor analytics pipeline | **In Progress (Phase 2)** |
+| `src/analytics/` | Contributor analytics pipeline | **Complete (Phase 2)** |
 | `src/simulation/` | Synthetic simulation environment | **Complete (Phase 1)** |
-| `src/api/` | External API layer | Planned |
+| `src/api/` | External API layer | **In Progress (Phase 3)** |
 
 ### /src/ontology — Files
 
@@ -115,6 +115,25 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `src/simulation/validation.ts` | validateContributorRecord(), validateContributorRecordCollection(), assertSyntheticIsolation(), assertBatchIsolation(), filterAnalyticsEligible() |
 | `src/simulation/index.ts` | Public module interface |
 | `src/simulation/__tests__/simulation.test.ts` | Simulation layer integrity tests (89 tests) |
+
+### /src/api — Files
+
+| File | Description |
+|------|-------------|
+| `src/api/server.ts` | Express application factory (createApp); mounts all routes and error handling middleware |
+| `src/api/types.ts` | Shared API response envelope types: ApiSuccessResponse, ApiErrorResponse, HealthPayload, ProtocolSummary, ProtocolDetail, AnalyticsProtocolsPayload, AnalyticsProtocolDetailPayload |
+| `src/api/index.ts` | Public module interface (exports createApp and all response types) |
+| `src/api/routes/health.ts` | GET /health route definition |
+| `src/api/routes/protocols.ts` | GET /protocols and GET /protocols/:id route definitions |
+| `src/api/routes/analytics.ts` | GET /analytics/protocols and GET /analytics/protocols/:id route definitions |
+| `src/api/controllers/healthController.ts` | GET /health handler — returns liveness status, version, uptime |
+| `src/api/controllers/protocolController.ts` | GET /protocols and GET /protocols/:id handlers — delegates to protocolStore; shapes moat-safe response |
+| `src/api/controllers/protocolStore.ts` | In-memory protocol data registry (read-only); seed data for integration tests |
+| `src/api/controllers/analyticsController.ts` | GET /analytics/protocols and GET /analytics/protocols/:id handlers — delegates to analytics pipeline |
+| `src/api/controllers/analyticsStore.ts` | In-memory contributor record registry (read-only); seed data satisfying LOCK-003 |
+| `src/api/middleware/errorHandler.ts` | Global Express error-handling middleware; ValidationError (400), NotFoundError (404), fallback (500) |
+| `src/api/middleware/validateId.ts` | Path parameter validation middleware — enforces canonical identifier format |
+| `src/api/__tests__/api.test.ts` | Integration tests for all five endpoints (26 tests) |
 
 ---
 
