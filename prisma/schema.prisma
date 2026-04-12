@@ -13,7 +13,7 @@
 // Connection is configured via prisma.config.ts (Prisma 7 config-based approach).
 
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../src/generated/prisma"
 }
 
