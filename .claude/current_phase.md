@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-**Phase**: 3 — External API Layer
+**Phase**: 4 — Persistence and Data Integrity Layer
 **Status**: IN PROGRESS
 **Started**: 2026-04-12
 **Target Completion**: TBD
@@ -11,34 +11,41 @@
 
 ## Phase Description
 
-Phase 3 exposes a clean, read-only HTTP API layer over the existing domain and analytics modules (Phases 1 and 2). No business logic is duplicated; all controllers delegate to existing module functions. LOCK-002 and LOCK-003 are enforced at the API boundary.
+Phase 4 introduces the database persistence layer using Prisma. This first PR-sized slice establishes the Prisma schema and TypeScript repository interfaces. Subsequent slices will add concrete Prisma-backed implementations and wire the repository layer into the API controllers.
 
 ---
 
-## Phase 3 Deliverables
+## Phase 4 Deliverables
 
 | Deliverable | Status |
 |-------------|--------|
-| `src/api/server.ts` — Express application factory | ✅ Complete |
-| `src/api/types.ts` — shared response envelope types | ✅ Complete |
-| `src/api/routes/` — health, protocols, analytics route definitions | ✅ Complete |
-| `src/api/controllers/` — all five endpoint controllers + stores | ✅ Complete |
-| `src/api/middleware/` — errorHandler, validateId | ✅ Complete |
-| `src/api/__tests__/api.test.ts` — 26 integration tests | ✅ Complete |
-| ADR-011 — API exposure strategy documented | ✅ Complete |
-| `docs/ARCHITECTURE_INDEX.md` — updated with API files | ✅ Complete |
+| `prisma/schema.prisma` — five persistence models (Contributor, Protocol, Challenge, Blend, OutcomeLog) | ✅ Complete |
+| `prisma.config.ts` — Prisma 7 datasource configuration | ✅ Complete |
+| `src/db/types.ts` — shared persistence types (pagination, errors) | ✅ Complete |
+| `src/db/repositories/contributorRepository.ts` — IContributorRepository interface | ✅ Complete |
+| `src/db/repositories/protocolRepository.ts` — IProtocolRepository interface | ✅ Complete |
+| `src/db/repositories/challengeRepository.ts` — IChallengeRepository interface | ✅ Complete |
+| `src/db/repositories/blendRepository.ts` — IBlendRepository interface | ✅ Complete |
+| `src/db/repositories/outcomeLogRepository.ts` — IOutcomeLogRepository interface | ✅ Complete |
+| `src/db/index.ts` — public persistence module interface | ✅ Complete |
+| ADR-012 — Phase 4 schema and interface decisions documented | ✅ Complete |
+| `docs/ARCHITECTURE_INDEX.md` — updated with Phase 4 files | ✅ Complete |
+| Concrete Prisma-backed repository implementations | ⬜ Future slice |
+| Database migration scripts | ⬜ Future slice |
+| Wire repository layer into API controllers | ⬜ Future slice |
 
 ---
 
-## Phase 3 Exit Criteria
+## Phase 4 Exit Criteria (this slice)
 
-Phase 3 is complete when:
-1. All five endpoints are implemented and tested. ✅
-2. No moat-protected internals are exposed (LOCK-002). ✅
-3. All analytics data flows through the validated pipeline (LOCK-003). ✅
-4. All existing tests continue to pass (471 prior + 26 new = 497 total). ✅
-5. Human project lead has reviewed Phase 3 implementation. ⬜ (pending)
-6. Phase 4 kickoff is authorized. ⬜ (pending)
+1. Prisma schema validates with `prisma validate`. ✅
+2. All five models (Contributor, Protocol, Challenge, Blend, OutcomeLog) are defined. ✅
+3. LOCK-003 fields (dataOrigin, exclusionStatus) are required in schema. ✅
+4. Repository interfaces are defined for all five models. ✅
+5. No existing API routes/controllers modified. ✅
+6. No auth changes. ✅
+7. All 497 existing tests pass. ✅
+8. Human project lead has reviewed Phase 4 slice. ⬜ (pending)
 
 ---
 
@@ -49,4 +56,5 @@ Phase 3 is complete when:
 | 0 | Architecture Foundation | ✅ Complete | 2026-04-10 |
 | 1 | Core Domain Implementation | ✅ Complete | 2026-04-11 |
 | 2 | Intelligence Layer (Contributor Analytics) | ✅ Complete | 2026-04-11 |
-| 3 | External API Layer | IN PROGRESS | — |
+| 3 | External API Layer | ✅ Complete | 2026-04-12 |
+| 4 | Persistence and Data Integrity Layer | IN PROGRESS | — |

@@ -248,6 +248,48 @@ The analytics signal model (M-004) is intentionally excluded. This module handle
 
 ---
 
+### ADR-012: Implement src/db/ — Phase 4 Persistence and Data Integrity Layer (Schema + Interfaces)
+**Status**: ACCEPTED
+**Date**: 2026-04-12
+**Deciders**: Swarm Orchestrator (Phase 4 kickoff; Phase 3 complete)
+
+**Context**: Phase 3 (`src/api/`) introduced read-only HTTP endpoints backed by in-memory stores. The in-memory stores (noted in ADR-011 as intentional stubs) need to be replaced by a database-backed persistence layer in Phase 4. This first Phase 4 slice establishes the Prisma schema and TypeScript repository interfaces without introducing concrete implementations or modifying the existing API layer.
+
+**Decision**: Add Prisma 7 and establish `src/db/` with the following deliverables:
+
+1. **`prisma/schema.prisma`** — Prisma schema defining five persistence models:
+   - `Contributor` — implements Contributor Record entity (LOCK-003: `dataOrigin` and `exclusionStatus` required on every row)
+   - `Protocol` — implements Protocol entity; `phases` stored as JSONB (LOCK-005: version format enforced in application layer; MOAT: M-002)
+   - `Challenge` — implements Challenge entity; engine rules excluded (MOAT: M-003)
+   - `Blend` — implements Blend entity; only pre-computed `synergyScore` stored (MOAT: M-001)
+   - `OutcomeLog` — structured, time-stamped qualitative outcome entries linked to a Contributor record
+
+2. **`prisma.config.ts`** — Prisma 7 configuration; datasource URL is read from `DATABASE_URL` environment variable.
+
+3. **`src/db/types.ts`** — Shared persistence types: `PaginationOptions`, `PagedResult<T>`, `RepositoryError`, `RepositoryErrorCode`.
+
+4. **Repository interfaces** (no implementations):
+   - `src/db/repositories/contributorRepository.ts` — `IContributorRepository`
+   - `src/db/repositories/protocolRepository.ts` — `IProtocolRepository`
+   - `src/db/repositories/challengeRepository.ts` — `IChallengeRepository`
+   - `src/db/repositories/blendRepository.ts` — `IBlendRepository`
+   - `src/db/repositories/outcomeLogRepository.ts` — `IOutcomeLogRepository`
+
+5. **`src/db/index.ts`** — Public module interface for the persistence layer.
+
+6. **`.env.example`** — Placeholder environment variable file; `.env` added to `.gitignore`.
+
+**Consequences**:
+- `prisma/schema.prisma` is the single source of truth for database structure. Changes to entity shapes require both a schema update and a corresponding ADR.
+- LOCK-003 constraints (`dataOrigin`, `exclusionStatus`, adherence threshold) are preserved in the schema with indexed columns; enforcement of the 50% adherence threshold remains in `src/analytics/`.
+- No existing API routes, controllers, or in-memory stores are modified in this slice.
+- No concrete repository implementations are added; a future ADR will introduce Prisma-backed implementations and migration scripts.
+- No direct Prisma client access is exposed from `src/api/` — the repository interface layer provides the boundary.
+- All 497 existing tests continue to pass; no new tests were added as the deliverables are pure TypeScript interfaces with no runtime behaviour.
+- The `src/generated/prisma` output directory (Prisma client) is excluded from version control via `.gitignore`.
+
+---
+
 ### ADR-011: Implement src/api/ — Phase 3 External API Layer (Read-Only)
 **Status**: ACCEPTED
 **Date**: 2026-04-12
