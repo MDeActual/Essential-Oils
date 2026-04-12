@@ -222,7 +222,8 @@ The challenge engine rule evaluation logic (M-003) — the proprietary system go
 
 ---
 
-### ADR-009: Implement src/simulation/ — Phase 1 Synthetic Simulation Layer**Status**: ACCEPTED
+### ADR-009: Implement src/simulation/ — Phase 1 Synthetic Simulation Layer
+**Status**: ACCEPTED
 **Date**: 2026-04-11
 **Deciders**: Worker Agent C (Phase 1 continuation; Swarm Orchestrator authority)
 
