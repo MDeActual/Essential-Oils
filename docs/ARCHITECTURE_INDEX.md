@@ -52,6 +52,7 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `src/analytics/` | Contributor analytics pipeline | **Complete (Phase 2)** |
 | `src/simulation/` | Synthetic simulation environment | **Complete (Phase 1)** |
 | `src/api/` | External API layer | **In Progress (Phase 3)** |
+| `src/db/` | Persistence layer — Prisma schema and repository interfaces | **In Progress (Phase 4)** |
 
 ### /src/ontology — Files
 
@@ -134,6 +135,30 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `src/api/middleware/errorHandler.ts` | Global Express error-handling middleware; ValidationError (400), NotFoundError (404), fallback (500) |
 | `src/api/middleware/validateId.ts` | Path parameter validation middleware — enforces canonical identifier format |
 | `src/api/__tests__/api.test.ts` | Integration tests for all five endpoints (26 tests) |
+
+---
+
+### /src/db — Files (Phase 4)
+
+| File | Description |
+|------|-------------|
+| `src/db/types.ts` | Shared persistence types: PaginationOptions, PagedResult, RepositoryError, RepositoryErrorCode |
+| `src/db/repositories/contributorRepository.ts` | IContributorRepository interface; CreateContributorInput, UpdateContributorInput types |
+| `src/db/repositories/protocolRepository.ts` | IProtocolRepository interface; CreateProtocolInput, UpdateProtocolInput types |
+| `src/db/repositories/challengeRepository.ts` | IChallengeRepository interface; CreateChallengeInput, UpdateChallengeInput types |
+| `src/db/repositories/blendRepository.ts` | IBlendRepository interface; CreateBlendInput, UpdateBlendInput types |
+| `src/db/repositories/outcomeLogRepository.ts` | IOutcomeLogRepository interface; OutcomeLog, CreateOutcomeLogInput types |
+| `src/db/index.ts` | Public module interface for the persistence layer |
+
+---
+
+### /prisma — Files
+
+| File | Description |
+|------|-------------|
+| `prisma/schema.prisma` | Prisma schema — models: Contributor, Protocol, Challenge, Blend, OutcomeLog; enums aligned with domain layer |
+| `prisma.config.ts` | Prisma 7 configuration — datasource URL from DATABASE_URL environment variable |
+| `.env.example` | Placeholder environment variable file; actual .env is git-ignored |
 
 ---
 

@@ -1,0 +1,357 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+//
+// Phyto.ai Persistence Layer — Phase 4
+// Models: Contributor, Protocol, Challenge, Blend, OutcomeLog
+//
+// Architecture constraints:
+//   LOCK-001: Entity shapes align with docs/DOMAIN_MODEL.md (immutable entities).
+//   LOCK-002: No moat-protected algorithm output or weight matrix is stored here.
+//   LOCK-003: dataOrigin and exclusionStatus are required on every Contributor row.
+//   LOCK-005: Protocol.version follows semantic versioning (enforced in application layer).
+//
+// Connection is configured via prisma.config.ts (Prisma 7 config-based approach).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enumerations — values mirror the application-layer enums in src/
+// ---------------------------------------------------------------------------
+
+/// Origin of a contributor record (LOCK-003).
+/// Only REAL_CONTRIBUTOR rows are analytics-eligible.
+enum DataOrigin {
+  REAL_CONTRIBUTOR     @map("real_contributor")
+  SYNTHETIC_SIMULATION @map("synthetic_simulation")
+}
+
+/// Analytics inclusion status for a contributor record (LOCK-003).
+/// Rows with adherenceScore < 50 must carry EXCLUDED.
+enum ExclusionStatus {
+  INCLUDED @map("included")
+  EXCLUDED @map("excluded")
+}
+
+/// Reason a contributor record was excluded from analytics (LOCK-003).
+enum ExclusionReason {
+  ADHERENCE_BELOW_THRESHOLD @map("adherence_below_threshold")
+  SYNTHETIC_DATA            @map("synthetic_data")
+  MANUAL_FLAG               @map("manual_flag")
+  INCOMPLETE_RECORD         @map("incomplete_record")
+}
+
+/// Lifecycle status of a Protocol record (mirrors ProtocolStatus in src/protocol/types.ts).
+enum ProtocolStatus {
+  DRAFT      @map("draft")
+  ACTIVE     @map("active")
+  COMPLETED  @map("completed")
+  DEPRECATED @map("deprecated")
+}
+
+/// Functional type of a Challenge (mirrors ChallengeType in src/protocol/types.ts).
+/// MOAT NOTICE (M-003): Challenge engine rule logic is moat-protected; only the
+/// entity type is persisted here.
+enum ChallengeType {
+  ADHERENCE    @map("adherence")
+  EDUCATIONAL  @map("educational")
+  EXPERIENTIAL @map("experiential")
+}
+
+/// Completion state of a Challenge record (mirrors ChallengeCompletionStatus).
+enum ChallengeCompletionStatus {
+  PENDING   @map("pending")
+  COMPLETED @map("completed")
+  SKIPPED   @map("skipped")
+}
+
+/// Application method for a Blend (mirrors ApplicationMethod in src/ontology/types.ts).
+enum ApplicationMethod {
+  TOPICAL  @map("topical")
+  AROMATIC @map("aromatic")
+  INTERNAL @map("internal")
+}
+
+/// Safety validation tier for a Blend (mirrors BlendSafetyStatus in src/blend/types.ts).
+enum BlendSafetyStatus {
+  VALIDATED @map("validated")
+  PENDING   @map("pending")
+  REJECTED  @map("rejected")
+}
+
+// ---------------------------------------------------------------------------
+// Contributor
+//
+// Implements the Contributor Record entity from docs/DOMAIN_MODEL.md.
+// LOCK-003: dataOrigin and exclusionStatus are mandatory on every row.
+//           Only REAL_CONTRIBUTOR rows with INCLUDED status are analytics-eligible.
+//           Rows with adherenceScore < 50 must carry EXCLUDED (enforced in app layer).
+// ---------------------------------------------------------------------------
+
+/// Contributor record representing one user's participation data for a single
+/// protocol run. Used for population-level analytics and protocol evolution signals.
+model Contributor {
+  /// Surrogate primary key (DB-generated).
+  id String @id @default(cuid())
+
+  /// Application-level record identifier (UUID or slug).
+  recordId String @unique @map("record_id")
+
+  /// Reference to the user. Anonymised for analytics purposes — must not
+  /// contain personally identifiable information in analytics payloads.
+  userId String @map("user_id")
+
+  /// Reference to the associated Protocol.
+  protocolId String @map("protocol_id")
+
+  /// Origin of this record (LOCK-003). Only REAL_CONTRIBUTOR rows are
+  /// eligible for production analytics.
+  dataOrigin DataOrigin @map("data_origin")
+
+  /// Whether this record is included in analytics scoring (LOCK-003).
+  /// Rows with adherenceScore < 50 must carry EXCLUDED.
+  exclusionStatus ExclusionStatus @map("exclusion_status")
+
+  /// Reason for exclusion. Present when exclusionStatus is EXCLUDED;
+  /// absent when INCLUDED.
+  exclusionReason ExclusionReason? @map("exclusion_reason")
+
+  /// Adherence score as a percentage (0–100).
+  /// Application layer enforces: adherenceScore < 50 → exclusionStatus = EXCLUDED.
+  adherenceScore Float @map("adherence_score")
+
+  /// Challenge completion rate as a percentage (0–100).
+  challengeCompletionRate Float @map("challenge_completion_rate")
+
+  /// Optional qualitative outcome summary from the contributor.
+  outcomeNotes String? @map("outcome_notes")
+
+  /// Timestamp when this record was captured (application-supplied).
+  recordedAt DateTime @map("recorded_at")
+
+  /// Timestamp when this row was inserted into the database.
+  createdAt DateTime @default(now()) @map("created_at")
+
+  /// Timestamp of the last update to this row.
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  /// Structured outcome log entries associated with this contributor record.
+  outcomeLogs OutcomeLog[]
+
+  @@index([protocolId])
+  @@index([dataOrigin, exclusionStatus])
+  @@map("contributors")
+}
+
+// ---------------------------------------------------------------------------
+// Protocol
+//
+// Implements the Protocol entity from docs/DOMAIN_MODEL.md.
+// MOAT NOTICE (M-002): The protocol generation algorithm is proprietary.
+//   Only the structural output shape is persisted here.
+// LOCK-005: version must follow MAJOR.MINOR.PATCH (enforced in application layer).
+// ---------------------------------------------------------------------------
+
+/// Structured, personalised sequence of oil application recommendations for a
+/// user's health goal over time.
+///
+/// Phase-level detail (blendIds, oilIds, instructions) is stored as JSONB so that
+/// the ordered phase array is preserved without additional join tables, while
+/// keeping the moat-protected generation logic out of the schema.
+model Protocol {
+  /// Surrogate primary key (DB-generated).
+  id String @id @default(cuid())
+
+  /// Application-level protocol identifier (UUID or slug).
+  protocolId String @unique @map("protocol_id")
+
+  /// Semantic version (MAJOR.MINOR.PATCH) — required by LOCK-005.
+  /// Production changes require a MINOR or MAJOR version bump.
+  version String
+
+  /// Reference to the user profile that owns this protocol.
+  userProfileId String @map("user_profile_id")
+
+  /// Primary health objective for this protocol.
+  goal String
+
+  /// Total recommended duration in days.
+  durationDays Int @map("duration_days")
+
+  /// Lifecycle status of the protocol.
+  status ProtocolStatus @default(DRAFT)
+
+  /// Ordered array of protocol phases stored as a JSON document.
+  /// Each element follows the ProtocolPhase shape defined in src/protocol/types.ts.
+  /// MOAT NOTICE (M-002): Phase content is structural output only — not the generation algorithm.
+  phases Json
+
+  /// IDs of Challenges associated with this protocol.
+  challengeIds String[] @map("challenge_ids")
+
+  /// Timestamp when this protocol was created (application-supplied).
+  createdAt DateTime @map("created_at")
+
+  /// Timestamp when this row was inserted into the database.
+  dbCreatedAt DateTime @default(now()) @map("db_created_at")
+
+  /// Timestamp of the last update to this row.
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  /// Challenges belonging to this protocol.
+  challenges Challenge[]
+
+  @@index([userProfileId])
+  @@index([status])
+  @@map("protocols")
+}
+
+// ---------------------------------------------------------------------------
+// Challenge
+//
+// Implements the Challenge entity from docs/DOMAIN_MODEL.md.
+// MOAT NOTICE (M-003): Challenge engine rule logic and sequencing heuristics
+//   are moat-protected. Only the entity structure is persisted here.
+// ---------------------------------------------------------------------------
+
+/// Structured milestone or behavioural prompt within a Protocol that drives
+/// adherence and tracks progress.
+model Challenge {
+  /// Surrogate primary key (DB-generated).
+  id String @id @default(cuid())
+
+  /// Application-level challenge identifier (UUID or slug).
+  challengeId String @unique @map("challenge_id")
+
+  /// Reference to the parent Protocol.
+  protocolId String @map("protocol_id")
+
+  /// Functional type of this challenge.
+  /// MOAT NOTICE (M-003): Selection and sequencing logic is moat-protected.
+  type ChallengeType
+
+  /// The challenge instruction or question presented to the user.
+  /// Only the prompt text may be returned externally (LOCK-002, M-003).
+  prompt String
+
+  /// Day within the protocol lifecycle when this challenge is presented (≥ 1).
+  dueDay Int @map("due_day")
+
+  /// Current completion state.
+  completionStatus ChallengeCompletionStatus @default(PENDING) @map("completion_status")
+
+  /// The user's recorded response or completion evidence.
+  /// Absent when completionStatus is PENDING.
+  response String?
+
+  /// Timestamp when this row was inserted into the database.
+  createdAt DateTime @default(now()) @map("created_at")
+
+  /// Timestamp of the last update to this row.
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  /// Parent protocol for this challenge.
+  protocol Protocol @relation(fields: [protocolId], references: [protocolId])
+
+  @@index([protocolId])
+  @@index([completionStatus])
+  @@map("challenges")
+}
+
+// ---------------------------------------------------------------------------
+// Blend
+//
+// Implements the Blend entity from docs/DOMAIN_MODEL.md.
+// MOAT NOTICE (M-001): Only the pre-computed synergyScore is stored.
+//   The scoring algorithm and weight matrix are moat-protected and must never
+//   appear in this schema or any persistence module.
+// ---------------------------------------------------------------------------
+
+/// A specific combination of two or more oils with defined ratios and a
+/// pre-computed synergy score.
+///
+/// Oil constituent entries (oilId, ratio, role) are stored as a JSON document
+/// to preserve the array without additional join tables.
+model Blend {
+  /// Surrogate primary key (DB-generated).
+  id String @id @default(cuid())
+
+  /// Application-level blend identifier (UUID or slug).
+  blendId String @unique @map("blend_id")
+
+  /// Constituent oil entries stored as a JSON document.
+  /// Each element follows the BlendOilEntry shape in src/blend/types.ts.
+  oils Json
+
+  /// Pre-computed blend compatibility score in [0, 100].
+  /// MOAT NOTICE (M-001): Value is supplied by the moat-protected blend
+  /// intelligence layer. The computation method is never stored here.
+  synergyScore Float @map("synergy_score")
+
+  /// Primary application method for this blend.
+  applicationMethod ApplicationMethod @map("application_method")
+
+  /// Primary therapeutic goal of the blend.
+  intendedEffect String @map("intended_effect")
+
+  /// Safety validation status of this blend.
+  safetyStatus BlendSafetyStatus @default(PENDING) @map("safety_status")
+
+  /// Timestamp when this blend was created (application-supplied).
+  createdAt DateTime @map("created_at")
+
+  /// Timestamp when this blend was last reviewed (application-supplied).
+  lastReviewedAt DateTime @map("last_reviewed_at")
+
+  /// Timestamp when this row was inserted into the database.
+  dbCreatedAt DateTime @default(now()) @map("db_created_at")
+
+  /// Timestamp of the last update to this row.
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([safetyStatus])
+  @@map("blends")
+}
+
+// ---------------------------------------------------------------------------
+// OutcomeLog
+//
+// Structured, time-stamped qualitative outcome log entry linked to a
+// Contributor record. Complements the free-text outcomeNotes field with
+// individual log entries for finer-grained outcome tracking.
+// ---------------------------------------------------------------------------
+
+/// A single qualitative outcome log entry associated with a Contributor record.
+model OutcomeLog {
+  /// Surrogate primary key (DB-generated).
+  id String @id @default(cuid())
+
+  /// Reference to the parent Contributor (via the application-level recordId).
+  contributorId String @map("contributor_id")
+
+  /// Reference to the associated Protocol (denormalised for query convenience).
+  protocolId String @map("protocol_id")
+
+  /// Qualitative outcome notes for this log entry.
+  notes String
+
+  /// Timestamp when this outcome was logged (application-supplied).
+  loggedAt DateTime @map("logged_at")
+
+  /// Timestamp when this row was inserted into the database.
+  createdAt DateTime @default(now()) @map("created_at")
+
+  /// Parent contributor record.
+  contributor Contributor @relation(fields: [contributorId], references: [recordId])
+
+  @@index([contributorId])
+  @@index([protocolId])
+  @@map("outcome_logs")
+}
+
