@@ -52,7 +52,7 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `src/analytics/` | Contributor analytics pipeline | **Complete (Phase 2)** |
 | `src/simulation/` | Synthetic simulation environment | **Complete (Phase 1)** |
 | `src/api/` | External API layer | **In Progress (Phase 3)** |
-| `src/db/` | Persistence layer — Prisma schema and repository interfaces | **In Progress (Phase 4)** |
+| `src/db/` | Persistence layer — Prisma schema, repository interfaces, and Prisma-backed implementations | **In Progress (Phase 4)** |
 
 ### /src/ontology — Files
 
@@ -143,12 +143,20 @@ This index is the authoritative map of all files, modules, and documents in the 
 | File | Description |
 |------|-------------|
 | `src/db/types.ts` | Shared persistence types: PaginationOptions, PagedResult, RepositoryError, RepositoryErrorCode |
+| `src/db/client.ts` | Prisma client singleton factory (getPrismaClient) |
+| `src/db/mappers.ts` | Bidirectional mappers between Prisma enum/model types and domain types |
 | `src/db/repositories/contributorRepository.ts` | IContributorRepository interface; CreateContributorInput, UpdateContributorInput types |
 | `src/db/repositories/protocolRepository.ts` | IProtocolRepository interface; CreateProtocolInput, UpdateProtocolInput types |
 | `src/db/repositories/challengeRepository.ts` | IChallengeRepository interface; CreateChallengeInput, UpdateChallengeInput types |
 | `src/db/repositories/blendRepository.ts` | IBlendRepository interface; CreateBlendInput, UpdateBlendInput types |
 | `src/db/repositories/outcomeLogRepository.ts` | IOutcomeLogRepository interface; OutcomeLog, CreateOutcomeLogInput types |
+| `src/db/implementations/PrismaContributorRepository.ts` | Prisma-backed implementation of IContributorRepository |
+| `src/db/implementations/PrismaProtocolRepository.ts` | Prisma-backed implementation of IProtocolRepository |
+| `src/db/implementations/PrismaChallengeRepository.ts` | Prisma-backed implementation of IChallengeRepository |
+| `src/db/implementations/PrismaBlendRepository.ts` | Prisma-backed implementation of IBlendRepository |
+| `src/db/implementations/PrismaOutcomeLogRepository.ts` | Prisma-backed implementation of IOutcomeLogRepository |
 | `src/db/index.ts` | Public module interface for the persistence layer |
+| `src/db/__tests__/repositories.test.ts` | Unit tests for all Prisma repository implementations (mocked Prisma client) |
 
 ---
 

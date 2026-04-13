@@ -30,7 +30,7 @@ Phase 4 introduces the database persistence layer using Prisma. This first PR-si
 | `src/db/index.ts` — public persistence module interface | ✅ Complete |
 | ADR-012 — Phase 4 schema and interface decisions documented | ✅ Complete |
 | `docs/ARCHITECTURE_INDEX.md` — updated with Phase 4 files | ✅ Complete |
-| Concrete Prisma-backed repository implementations | ⬜ Future slice |
+| Concrete Prisma-backed repository implementations | ✅ Complete |
 | Database migration scripts | ⬜ Future slice |
 | Wire repository layer into API controllers | ⬜ Future slice |
 

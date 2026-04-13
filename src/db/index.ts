@@ -7,11 +7,9 @@
  * What this module provides:
  *   - Shared persistence types (pagination, errors)
  *   - Repository interfaces for all five persistence models
- *
+ *   - Prisma-backed concrete repository implementations
  * What this module does NOT provide:
- *   - Concrete repository implementations (a future ADR will introduce these)
- *   - Direct Prisma client access (implementations will be in a separate module)
- *   - Business logic (validation remains in the respective src/ domain modules)
+ *   - Direct Prisma client access (use src/db/client.ts for that)
  *
  * MOAT NOTICE: No proprietary algorithm outputs, weight matrices, or scoring
  *   logic are exposed through this module (LOCK-002, M-001, M-002, M-003, M-004).
@@ -35,3 +33,12 @@ export type {
   OutcomeLog,
   CreateOutcomeLogInput,
 } from "./repositories/outcomeLogRepository";
+
+// ---------------------------------------------------------------------------
+// Concrete Prisma-backed repository implementations
+// ---------------------------------------------------------------------------
+export { PrismaContributorRepository } from "./implementations/PrismaContributorRepository";
+export { PrismaProtocolRepository } from "./implementations/PrismaProtocolRepository";
+export { PrismaChallengeRepository } from "./implementations/PrismaChallengeRepository";
+export { PrismaBlendRepository } from "./implementations/PrismaBlendRepository";
+export { PrismaOutcomeLogRepository } from "./implementations/PrismaOutcomeLogRepository";
