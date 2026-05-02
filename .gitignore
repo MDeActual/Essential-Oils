@@ -2,6 +2,10 @@ node_modules/
 dist/
 *.js.map
 
+# Local Prisma dev artifacts
+dev.db
+.prisma/
+
 /src/generated/prisma
 
 # Environment variables — never commit credentials
