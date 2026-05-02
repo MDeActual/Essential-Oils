@@ -354,4 +354,3 @@ model OutcomeLog {
   @@index([protocolId])
   @@map("outcome_logs")
 }
-
