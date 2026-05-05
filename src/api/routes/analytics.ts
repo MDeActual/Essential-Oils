@@ -12,17 +12,20 @@
 
 import { Router } from "express";
 import {
-  getAnalyticsProtocol,
-  listAnalyticsProtocols,
+  createAnalyticsController,
 } from "../controllers/analyticsController";
 import { validateId } from "../middleware/validateId";
+import { AnalyticsService } from "../services/analyticsService";
 
-const router = Router();
+export function createAnalyticsRouter(analyticsService: AnalyticsService): Router {
+  const router = Router();
+  const controller = createAnalyticsController(analyticsService);
 
 /** GET /analytics/protocols — per-protocol cohort summaries. */
-router.get("/protocols", listAnalyticsProtocols);
+  router.get("/protocols", controller.listAnalyticsProtocols);
 
 /** GET /analytics/protocols/:id — cohort detail for a single protocol. */
-router.get("/protocols/:id", validateId, getAnalyticsProtocol);
+  router.get("/protocols/:id", validateId, controller.getAnalyticsProtocol);
 
-export default router;
+  return router;
+}

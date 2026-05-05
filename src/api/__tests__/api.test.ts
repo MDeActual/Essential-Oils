@@ -19,8 +19,21 @@
 
 import request from "supertest";
 import { createApp } from "../server";
+import {
+  SEED_CONTRIBUTOR_RECORDS,
+  SEED_PROTOCOLS,
+} from "./fixtures";
 
-const app = createApp();
+const app = createApp({
+  protocolService: {
+    listProtocols: async () => SEED_PROTOCOLS,
+    getProtocolById: async (protocolId) =>
+      SEED_PROTOCOLS.find((p) => p.protocolId === protocolId) ?? null,
+  },
+  analyticsService: {
+    getContributorRecordsForAnalytics: async () => SEED_CONTRIBUTOR_RECORDS,
+  },
+});
 
 // ---------------------------------------------------------------------------
 // GET /health

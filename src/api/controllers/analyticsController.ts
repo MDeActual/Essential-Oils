@@ -29,7 +29,7 @@ import {
   AnalyticsSegmentSummary,
   ApiSuccessResponse,
 } from "../types";
-import { getAllContributorRecords } from "./analyticsStore";
+import { AnalyticsService } from "../services/analyticsService";
 
 /**
  * GET /analytics/protocols
@@ -37,54 +37,66 @@ import { getAllContributorRecords } from "./analyticsStore";
  * Runs the full protocol segmentation pipeline over all contributor records
  * and returns a summary of per-protocol cohort metrics.
  */
-export function listAnalyticsProtocols(
-  _req: Request,
-  res: Response,
-  next: NextFunction
-): void {
-  try {
-    const records = getAllContributorRecords();
-    const result = runProtocolSegmentPipeline([...records]);
+export function createAnalyticsController(analyticsService: AnalyticsService): {
+  listAnalyticsProtocols: (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => Promise<void>;
+  getAnalyticsProtocol: (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => Promise<void>;
+} {
+  async function listAnalyticsProtocols(
+    _req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const records = await analyticsService.getContributorRecordsForAnalytics();
+      const result = runProtocolSegmentPipeline([...records]);
 
-    if (!result.success) {
-      // Forward the first pipeline error as an internal error.
-      const message =
-        result.errors.length > 0
-          ? result.errors[0].message
-          : "Analytics pipeline failed.";
-      next(new Error(message));
-      return;
+      if (!result.success) {
+        // Forward the first pipeline error as an internal error.
+        const message =
+          result.errors.length > 0
+            ? result.errors[0].message
+            : "Analytics pipeline failed.";
+        next(new Error(message));
+        return;
+      }
+
+      const segments: AnalyticsSegmentSummary[] = (result.segments ?? []).map(
+        (seg) => ({
+          protocolId: seg.protocolId,
+          eligibleRecordCount: seg.metrics.eligibleRecordCount,
+          averageAdherenceScore: seg.metrics.averageAdherenceScore,
+          averageChallengeCompletionRate:
+            seg.metrics.averageChallengeCompletionRate,
+        })
+      );
+
+      const payload: AnalyticsProtocolsPayload = {
+        protocolCount: result.protocolCount ?? 0,
+        totalEligibleRecords: result.totalEligibleRecords ?? 0,
+        totalExcludedRecords: result.totalExcludedRecords ?? 0,
+        segments,
+        generatedAt: result.generatedAt ?? new Date().toISOString(),
+      };
+
+      const body: ApiSuccessResponse<AnalyticsProtocolsPayload> = {
+        success: true,
+        data: payload,
+        generatedAt: new Date().toISOString(),
+      };
+
+      res.status(200).json(body);
+    } catch (err) {
+      next(err);
     }
-
-    const segments: AnalyticsSegmentSummary[] = (result.segments ?? []).map(
-      (seg) => ({
-        protocolId: seg.protocolId,
-        eligibleRecordCount: seg.metrics.eligibleRecordCount,
-        averageAdherenceScore: seg.metrics.averageAdherenceScore,
-        averageChallengeCompletionRate:
-          seg.metrics.averageChallengeCompletionRate,
-      })
-    );
-
-    const payload: AnalyticsProtocolsPayload = {
-      protocolCount: result.protocolCount ?? 0,
-      totalEligibleRecords: result.totalEligibleRecords ?? 0,
-      totalExcludedRecords: result.totalExcludedRecords ?? 0,
-      segments,
-      generatedAt: result.generatedAt ?? new Date().toISOString(),
-    };
-
-    const body: ApiSuccessResponse<AnalyticsProtocolsPayload> = {
-      success: true,
-      data: payload,
-      generatedAt: new Date().toISOString(),
-    };
-
-    res.status(200).json(body);
-  } catch (err) {
-    next(err);
   }
-}
 
 /**
  * GET /analytics/protocols/:id
@@ -92,59 +104,58 @@ export function listAnalyticsProtocols(
  * Returns detailed cohort metrics for a single protocol identified by :id.
  * Returns 404 if no analytics-eligible records exist for the given protocolId.
  */
-export function getAnalyticsProtocol(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
-  try {
-    const { id } = req.params;
-    const records = getAllContributorRecords();
-    const result = runProtocolSegmentPipeline([...records]);
+  async function getAnalyticsProtocol(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { id } = req.params;
+      const records = await analyticsService.getContributorRecordsForAnalytics();
+      const result = runProtocolSegmentPipeline([...records]);
 
-    if (!result.success) {
-      const message =
-        result.errors.length > 0
-          ? result.errors[0].message
-          : "Analytics pipeline failed.";
-      next(new Error(message));
-      return;
-    }
+      if (!result.success) {
+        const message =
+          result.errors.length > 0
+            ? result.errors[0].message
+            : "Analytics pipeline failed.";
+        next(new Error(message));
+        return;
+      }
 
-    const segment = (result.segments ?? []).find(
-      (seg) => seg.protocolId === id
-    );
-
-    if (!segment) {
-      next(
-        new NotFoundError(
-          `No analytics data found for protocol '${id}'.`
-        )
+      const segment = (result.segments ?? []).find(
+        (seg) => seg.protocolId === id
       );
-      return;
+
+      if (!segment) {
+        next(new NotFoundError(`No analytics data found for protocol '${id}'.`));
+        return;
+      }
+
+      const payload: AnalyticsProtocolDetailPayload = {
+        protocolId: segment.protocolId,
+        eligibleRecordCount: segment.metrics.eligibleRecordCount,
+        excludedRecordCount: segment.metrics.excludedRecordCount,
+        averageAdherenceScore: segment.metrics.averageAdherenceScore,
+        averageChallengeCompletionRate:
+          segment.metrics.averageChallengeCompletionRate,
+        minAdherenceScore: segment.metrics.minAdherenceScore,
+        maxAdherenceScore: segment.metrics.maxAdherenceScore,
+        exclusionBreakdown: segment.metrics.exclusionBreakdown,
+        computedAt: segment.metrics.computedAt,
+      };
+
+      const body: ApiSuccessResponse<AnalyticsProtocolDetailPayload> = {
+        success: true,
+        data: payload,
+        generatedAt: new Date().toISOString(),
+      };
+
+      res.status(200).json(body);
+    } catch (err) {
+      next(err);
     }
-
-    const payload: AnalyticsProtocolDetailPayload = {
-      protocolId: segment.protocolId,
-      eligibleRecordCount: segment.metrics.eligibleRecordCount,
-      excludedRecordCount: segment.metrics.excludedRecordCount,
-      averageAdherenceScore: segment.metrics.averageAdherenceScore,
-      averageChallengeCompletionRate:
-        segment.metrics.averageChallengeCompletionRate,
-      minAdherenceScore: segment.metrics.minAdherenceScore,
-      maxAdherenceScore: segment.metrics.maxAdherenceScore,
-      exclusionBreakdown: segment.metrics.exclusionBreakdown,
-      computedAt: segment.metrics.computedAt,
-    };
-
-    const body: ApiSuccessResponse<AnalyticsProtocolDetailPayload> = {
-      success: true,
-      data: payload,
-      generatedAt: new Date().toISOString(),
-    };
-
-    res.status(200).json(body);
-  } catch (err) {
-    next(err);
   }
+
+  return { listAnalyticsProtocols, getAnalyticsProtocol };
 }

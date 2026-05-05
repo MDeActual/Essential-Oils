@@ -166,6 +166,8 @@ This index is the authoritative map of all files, modules, and documents in the 
 |------|-------------|
 | `prisma/schema.prisma` | Prisma schema — models: Contributor, Protocol, Challenge, Blend, OutcomeLog; enums aligned with domain layer |
 | `prisma.config.ts` | Prisma 7 configuration — datasource URL from DATABASE_URL environment variable |
+| `prisma/migrations/` | Prisma Migrate migration scripts (SQL) |
+| `prisma/seed.js` | Seed script for local development and test fixtures |
 | `.env.example` | Placeholder environment variable file; actual .env is git-ignored |
 
 ---

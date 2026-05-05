@@ -7,9 +7,16 @@
     "doc": "docs"
   },
   "scripts": {
+    "postinstall": "prisma generate",
+    "prisma:generate": "prisma generate",
     "build": "tsc",
+    "prebuild": "prisma generate",
     "test": "jest",
+    "pretest": "prisma generate",
     "test:watch": "jest --watch"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   },
   "jest": {
     "preset": "ts-jest",

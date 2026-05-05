@@ -21,18 +21,39 @@
 
 import express, { Request, Response } from "express";
 import { errorHandler } from "./middleware/errorHandler";
-import analyticsRouter from "./routes/analytics";
 import healthRouter from "./routes/health";
-import protocolsRouter from "./routes/protocols";
 import { ApiErrorResponse } from "./types";
+import { PrismaContributorRepository, PrismaProtocolRepository } from "../db";
+import {
+  AnalyticsService,
+  RepositoryAnalyticsService,
+} from "./services/analyticsService";
+import {
+  ProtocolService,
+  RepositoryProtocolService,
+} from "./services/protocolService";
+import { createAnalyticsRouter } from "./routes/analytics";
+import { createProtocolsRouter } from "./routes/protocols";
+
+export interface AppDependencies {
+  protocolService?: ProtocolService;
+  analyticsService?: AnalyticsService;
+}
 
 /**
  * Creates and configures the Express application.
  *
  * @returns A configured Express application instance (not yet listening).
  */
-export function createApp(): express.Application {
+export function createApp(deps: AppDependencies = {}): express.Application {
   const app = express();
+
+  const protocolService =
+    deps.protocolService ??
+    new RepositoryProtocolService(new PrismaProtocolRepository());
+  const analyticsService =
+    deps.analyticsService ??
+    new RepositoryAnalyticsService(new PrismaContributorRepository());
 
   // Parse JSON request bodies.
   app.use(express.json());
@@ -42,8 +63,8 @@ export function createApp(): express.Application {
   // ---------------------------------------------------------------------------
 
   app.use("/health", healthRouter);
-  app.use("/protocols", protocolsRouter);
-  app.use("/analytics", analyticsRouter);
+  app.use("/protocols", createProtocolsRouter(protocolService));
+  app.use("/analytics", createAnalyticsRouter(analyticsService));
 
   // ---------------------------------------------------------------------------
   // 404 handler — must come after all routes

@@ -10,15 +10,21 @@
  */
 
 import { Router } from "express";
-import { getProtocol, listProtocols } from "../controllers/protocolController";
+import {
+  createProtocolController,
+} from "../controllers/protocolController";
 import { validateId } from "../middleware/validateId";
+import { ProtocolService } from "../services/protocolService";
 
-const router = Router();
+export function createProtocolsRouter(protocolService: ProtocolService): Router {
+  const router = Router();
+  const controller = createProtocolController(protocolService);
 
-/** GET /protocols — list all protocol summaries. */
-router.get("/", listProtocols);
+  /** GET /protocols — list all protocol summaries. */
+  router.get("/", controller.listProtocols);
 
-/** GET /protocols/:id — get a single protocol by id. */
-router.get("/:id", validateId, getProtocol);
+  /** GET /protocols/:id — get a single protocol by id. */
+  router.get("/:id", validateId, controller.getProtocol);
 
-export default router;
+  return router;
+}
