@@ -54,7 +54,7 @@ CREATE TABLE "protocols" (
     "duration_days" INTEGER NOT NULL,
     "status" "ProtocolStatus" NOT NULL DEFAULT 'draft',
     "phases" JSONB NOT NULL,
-    "challenge_ids" TEXT[],
+    "challenge_ids" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
     "created_at" TIMESTAMP(3) NOT NULL,
     "db_created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
