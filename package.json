@@ -7,8 +7,11 @@
     "doc": "docs"
   },
   "scripts": {
+    "generate": "prisma generate",
     "build": "tsc",
+    "prebuild": "prisma generate",
     "test": "jest",
+    "pretest": "prisma generate",
     "test:watch": "jest --watch"
   },
   "jest": {
