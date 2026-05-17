@@ -128,10 +128,12 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `src/api/routes/protocols.ts` | GET /protocols and GET /protocols/:id route definitions |
 | `src/api/routes/analytics.ts` | GET /analytics/protocols and GET /analytics/protocols/:id route definitions |
 | `src/api/controllers/healthController.ts` | GET /health handler — returns liveness status, version, uptime |
-| `src/api/controllers/protocolController.ts` | GET /protocols and GET /protocols/:id handlers — delegates to protocolStore; shapes moat-safe response |
+| `src/api/controllers/protocolController.ts` | GET /protocols and GET /protocols/:id handlers — delegates to ProtocolService (Prisma-backed when configured); shapes moat-safe response |
 | `src/api/controllers/protocolStore.ts` | In-memory protocol data registry (read-only); seed data for integration tests |
-| `src/api/controllers/analyticsController.ts` | GET /analytics/protocols and GET /analytics/protocols/:id handlers — delegates to analytics pipeline |
+| `src/api/controllers/analyticsController.ts` | GET /analytics/protocols and GET /analytics/protocols/:id handlers — delegates to AnalyticsService (Prisma-backed when configured) |
 | `src/api/controllers/analyticsStore.ts` | In-memory contributor record registry (read-only); seed data satisfying LOCK-003 |
+| `src/api/services/protocolService.ts` | Service layer for protocol read operations; maps repository domain objects to API payloads |
+| `src/api/services/analyticsService.ts` | Service layer for analytics read operations; fetches contributor records via repository and runs segmentation pipeline |
 | `src/api/middleware/errorHandler.ts` | Global Express error-handling middleware; ValidationError (400), NotFoundError (404), fallback (500) |
 | `src/api/middleware/validateId.ts` | Path parameter validation middleware — enforces canonical identifier format |
 | `src/api/__tests__/api.test.ts` | Integration tests for all five endpoints (26 tests) |

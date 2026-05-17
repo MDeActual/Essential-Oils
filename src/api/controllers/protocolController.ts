@@ -19,13 +19,17 @@
 
 import { NextFunction, Request, Response } from "express";
 import { NotFoundError } from "../middleware/errorHandler";
-import {
-  ApiSuccessResponse,
-  ProtocolDetail,
-  ProtocolPhaseDetail,
-  ProtocolSummary,
-} from "../types";
+import { ApiSuccessResponse, ProtocolDetail, ProtocolSummary } from "../types";
+import { ProtocolService } from "../services/protocolService";
 import { getAllProtocols, getProtocolById } from "./protocolStore";
+
+const protocolService = process.env["DATABASE_URL"]
+  ? new ProtocolService(
+      // Lazy import to avoid requiring a configured Prisma datasource in tests.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      new (require("../../db/implementations/PrismaProtocolRepository").PrismaProtocolRepository)()
+    )
+  : null;
 
 /**
  * GET /protocols
@@ -38,29 +42,30 @@ export function listProtocols(
   res: Response,
   next: NextFunction
 ): void {
-  try {
-    const protocols = getAllProtocols();
+  const serviceCall = protocolService
+    ? protocolService.listProtocols()
+    : Promise.resolve(
+        getAllProtocols().map((p) => ({
+          protocolId: p.protocolId,
+          version: p.version,
+          goal: p.goal,
+          durationDays: p.durationDays,
+          status: p.status,
+          phaseCount: p.phases.length,
+          createdAt: p.createdAt,
+        }))
+      );
 
-    const summaries: ProtocolSummary[] = protocols.map((p) => ({
-      protocolId: p.protocolId,
-      version: p.version,
-      goal: p.goal,
-      durationDays: p.durationDays,
-      status: p.status,
-      phaseCount: p.phases.length,
-      createdAt: p.createdAt,
-    }));
-
-    const body: ApiSuccessResponse<ProtocolSummary[]> = {
-      success: true,
-      data: summaries,
-      generatedAt: new Date().toISOString(),
-    };
-
-    res.status(200).json(body);
-  } catch (err) {
-    next(err);
-  }
+  serviceCall
+    .then((summaries: ProtocolSummary[]) => {
+      const body: ApiSuccessResponse<ProtocolSummary[]> = {
+        success: true,
+        data: summaries,
+        generatedAt: new Date().toISOString(),
+      };
+      res.status(200).json(body);
+    })
+    .catch(next);
 }
 
 /**
@@ -75,41 +80,43 @@ export function getProtocol(
   res: Response,
   next: NextFunction
 ): void {
-  try {
-    const id = req.params["id"] as string;
-    const protocol = getProtocolById(id);
+  const id = req.params["id"] as string;
+  const serviceCall = protocolService
+    ? protocolService.getProtocol(id)
+    : Promise.resolve((() => {
+        const protocol = getProtocolById(id);
+        if (!protocol) return null;
+        return {
+          protocolId: protocol.protocolId,
+          version: protocol.version,
+          goal: protocol.goal,
+          durationDays: protocol.durationDays,
+          status: protocol.status,
+          phases: protocol.phases.map((ph) => ({
+            phaseIndex: ph.phaseIndex,
+            label: ph.label,
+            durationDays: ph.durationDays,
+            instructions: ph.instructions,
+          })),
+          challengeCount: protocol.challengeIds.length,
+          createdAt: protocol.createdAt,
+        };
+      })());
 
-    if (!protocol) {
-      next(new NotFoundError(`Protocol '${id}' not found.`));
-      return;
-    }
+  serviceCall
+    .then((detail: ProtocolDetail | null) => {
+      if (!detail) {
+        next(new NotFoundError(`Protocol '${id}' not found.`));
+        return;
+      }
 
-    const phases: ProtocolPhaseDetail[] = protocol.phases.map((ph) => ({
-      phaseIndex: ph.phaseIndex,
-      label: ph.label,
-      durationDays: ph.durationDays,
-      instructions: ph.instructions,
-    }));
+      const body: ApiSuccessResponse<ProtocolDetail> = {
+        success: true,
+        data: detail,
+        generatedAt: new Date().toISOString(),
+      };
 
-    const detail: ProtocolDetail = {
-      protocolId: protocol.protocolId,
-      version: protocol.version,
-      goal: protocol.goal,
-      durationDays: protocol.durationDays,
-      status: protocol.status,
-      phases,
-      challengeCount: protocol.challengeIds.length,
-      createdAt: protocol.createdAt,
-    };
-
-    const body: ApiSuccessResponse<ProtocolDetail> = {
-      success: true,
-      data: detail,
-      generatedAt: new Date().toISOString(),
-    };
-
-    res.status(200).json(body);
-  } catch (err) {
-    next(err);
-  }
+      res.status(200).json(body);
+    })
+    .catch(next);
 }
