@@ -12,7 +12,7 @@
 
 **Architecture Package Version**: v11 CANONICAL
 **Governance Layer**: Architecture Control Layer v1.0 (established 2026-04-10)
-**Development Status**: Phase 2 functionally complete — `src/analytics/` baseline + protocol cohort segmentation slice complete; awaiting human review before Phase 3 kickoff. `src/api/` planned for Phase 3.
+**Development Status**: Phase 4 in progress — Prisma persistence layer added; Prisma-backed repository implementations complete; API controllers wired to use Prisma repositories when `DATABASE_URL` is set (in-memory fallback retained for dev/test without a DB).
 
 ---
 
@@ -45,7 +45,8 @@
 | `src/challenge/` | Challenge lifecycle, state transitions, participation and completion records | ✅ Complete (Phase 1) |
 | `src/analytics/` | Contributor analytics pipeline | ✅ Complete (Phase 2) |
 | `src/simulation/` | Synthetic simulation environment | ✅ Complete (Phase 1) |
-| `src/api/` | External API layer | ⬜ Planned |
+| `src/api/` | External API layer | ✅ Complete (Phase 3) |
+| `src/db/` | Prisma persistence layer (repositories, mappers, client) | ✅ Complete (Phase 4) |
 
 ---
 
