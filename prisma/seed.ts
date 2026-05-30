@@ -45,16 +45,16 @@ function exclusionStatusToDb(status: ExclusionStatus): "INCLUDED" | "EXCLUDED" {
 
 function exclusionReasonToDb(
   reason: ExclusionReason
-): "ADHERENCE_BELOW_THRESHOLD" | "USER_REQUEST" | "INVALID_DATA" | "OTHER" {
+): "ADHERENCE_BELOW_THRESHOLD" | "SYNTHETIC_DATA" | "MANUAL_FLAG" | "INCOMPLETE_RECORD" {
   switch (reason) {
     case ExclusionReason.AdherenceBelowThreshold:
       return "ADHERENCE_BELOW_THRESHOLD";
-    case ExclusionReason.UserRequest:
-      return "USER_REQUEST";
-    case ExclusionReason.InvalidData:
-      return "INVALID_DATA";
-    case ExclusionReason.Other:
-      return "OTHER";
+    case ExclusionReason.SyntheticData:
+      return "SYNTHETIC_DATA";
+    case ExclusionReason.ManualFlag:
+      return "MANUAL_FLAG";
+    case ExclusionReason.IncompleteRecord:
+      return "INCOMPLETE_RECORD";
   }
 }
 
