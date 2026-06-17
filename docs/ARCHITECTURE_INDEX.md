@@ -12,8 +12,8 @@ This index is the authoritative map of all files, modules, and documents in the 
 |------|-------------|--------|
 | `CLAUDE.md` | AI agent behavioral constraints and reading order | ✅ |
 | `AGENTS.md` | Agent roles, authority matrix, and communication contracts | ✅ |
-| `SWARM_PROMPT_STAGED.md` | Staged swarm execution prompts | ⬜ |
-| `DEVOS_GAP_ANALYSIS.md` | Gap analysis for unifying DevOS governance and execution artifacts | ⬜ |
+| `devos/prompts/SWARM_PROMPT_STAGED.md` | Scoped DevOS staged swarm execution prompts (external governance artifact) | ⬜ |
+| `devos/runbooks/devos_execution_plan.md` | Scoped DevOS production-readiness runbook (external governance artifact) | ⬜ |
 | `README.md` | Project overview | ⬜ |
 
 ---
