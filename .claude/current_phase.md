@@ -3,7 +3,7 @@
 ## Current Phase
 
 **Phase**: 4 — Persistence and Data Integrity Layer
-**Status**: IN PROGRESS
+**Status**: COMPLETE (pending human project lead review)
 **Started**: 2026-04-12
 **Target Completion**: TBD
 
@@ -33,6 +33,10 @@ Phase 4 introduces the database persistence layer using Prisma. This first PR-si
 | Concrete Prisma-backed repository implementations | ✅ Complete |
 | Database migration scripts | ✅ Complete |
 | Wire repository layer into API controllers | ✅ Complete |
+| `src/index.ts` — server entry point (`npm start` / `npm run dev`) | ✅ Complete |
+| `docs/swarm_rules.md` — multi-agent execution rules | ✅ Complete |
+| `docs/orchestrator_reading_order.md` — orchestrator bootstrap reading order | ✅ Complete |
+| `POST_PR17_AUDIT.md` — post-PR17 production readiness audit | ✅ Complete |
 
 ---
 
