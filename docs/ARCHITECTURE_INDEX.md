@@ -27,8 +27,8 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `docs/DOMAIN_MODEL.md` | Core domain entities and relationships | ✅ |
 | `docs/MOAT_MODEL.md` | Competitive differentiation and IP boundaries | ✅ |
 | `docs/autonomous_iteration_protocol.md` | Rules for autonomous protocol evolution | ⬜ |
-| `docs/swarm_rules.md` | Data integrity and multi-agent execution rules | ⬜ |
-| `docs/orchestrator_reading_order.md` | Canonical reading order for orchestrator bootstrap | ⬜ |
+| `docs/swarm_rules.md` | Data integrity and multi-agent execution rules | ✅ |
+| `docs/orchestrator_reading_order.md` | Canonical reading order for orchestrator bootstrap | ✅ |
 
 ---
 
@@ -45,14 +45,15 @@ This index is the authoritative map of all files, modules, and documents in the 
 
 | Module | Description | Status |
 |--------|-------------|--------|
+| `src/index.ts` | Server entry point — starts the Express app on `PORT` (default 3000) | **Complete (Phase 4)** |
 | `src/ontology/` | Oil and remedy ontology definitions | **Complete (Phase 1)** |
 | `src/blend/` | Blend entity types, schema, and validation | **Complete (Phase 1)** |
 | `src/protocol/` | Protocol and Challenge entity types, schema, and validation | **Complete (Phase 1)** |
 | `src/challenge/` | Challenge lifecycle, state transitions, participation and completion records | **Complete (Phase 1)** |
 | `src/analytics/` | Contributor analytics pipeline | **Complete (Phase 2)** |
 | `src/simulation/` | Synthetic simulation environment | **Complete (Phase 1)** |
-| `src/api/` | External API layer | **In Progress (Phase 3)** |
-| `src/db/` | Persistence layer — Prisma schema, repository interfaces, and Prisma-backed implementations | **In Progress (Phase 4)** |
+| `src/api/` | External API layer | **Complete (Phase 3)** |
+| `src/db/` | Persistence layer — Prisma schema, repository interfaces, and Prisma-backed implementations | **Complete (Phase 4)** |
 
 ### /src/ontology — Files
 

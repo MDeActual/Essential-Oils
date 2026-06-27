@@ -68,18 +68,23 @@ npm test
 
 ## Running the API Locally
 
-This repository currently exposes `createApp()` (Express factory) rather than a dedicated `npm start` script.
-
-### Dev run (ts-node)
+### Dev run (ts-node, no build step required)
 
 ```bash
-npx ts-node -e "const { createApp } = require('./src/api'); const app = createApp(); app.listen(3000, () => console.log('API running at http://localhost:3000'));"
+npm run dev
 ```
 
-### Built run (after `npm run build`)
+### Production run (after `npm run build`)
 
 ```bash
-node -e "const { createApp } = require('./dist/api'); const app = createApp(); app.listen(3000, () => console.log('API running at http://localhost:3000'));"
+npm run build
+npm start
+```
+
+The server listens on port 3000 by default. Override with the `PORT` environment variable:
+
+```bash
+PORT=8080 npm start
 ```
 
 ## API Endpoints
