@@ -10,6 +10,7 @@
     "generate": "prisma generate",
     "build": "tsc",
     "prebuild": "prisma generate",
+    "start": "node -e \"const { createApp } = require('./dist/api'); const port = Number(process.env.PORT || 3000); createApp().listen(port, '0.0.0.0', () => console.log('API running at http://0.0.0.0:' + port));\"",
     "test": "jest",
     "pretest": "prisma generate",
     "test:watch": "jest --watch"

@@ -68,7 +68,16 @@ npm test
 
 ## Running the API Locally
 
-This repository currently exposes `createApp()` (Express factory) rather than a dedicated `npm start` script.
+This repository now includes a deploy-friendly `npm start` script that runs the built API server.
+
+```bash
+npm run build
+npm start
+```
+
+`npm start` binds to `0.0.0.0` and respects the `PORT` environment variable (defaults to `3000`).
+
+> This is the fastest next move toward MVP deployment: use the existing build output and start command on a host (Railway/Render/Fly/etc.) with `DATABASE_URL` configured.
 
 ### Dev run (ts-node)
 
