@@ -59,7 +59,7 @@ describe("extractAdherenceSignal", () => {
     expect(signal.normalizedScore).toBe(1);
   });
 
-  it("normalizes adherenceScore 0 to 0", () => {
+  it("normalizes adherenceScore 50 to 0.5", () => {
     const signal = extractAdherenceSignal(makeRecord({ adherenceScore: 50 }));
     expect(signal.normalizedScore).toBe(0.5);
   });
