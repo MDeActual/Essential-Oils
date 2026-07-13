@@ -3,7 +3,7 @@
 **Repo**: MDeActual/Essential-Oils  
 **Branch**: main  
 **Audit Date**: 2026-06-27  
-**Audit Triggered By**: `devos_execution_plan.md` (Priority: P0, Blocking Launch: YES)
+**Audit Triggered By**: `devos/runbooks/devos_execution_plan.md` (Priority: P0, Blocking Launch: YES)
 
 ---
 
