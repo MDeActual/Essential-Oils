@@ -27,6 +27,15 @@ export type {
   AnalyticsValidationError,
   AnalyticsValidationResult,
   AnalyticsError,
+  AdherenceSignal,
+  ProtocolCompletionSignal,
+  OilUsageFrequencySignal,
+  ChallengeParticipationSignal,
+  ProtocolEffectivenessScore,
+  BlendSynergyInfluenceSignal,
+  ContributorReliabilityScore,
+  ContributorActivitySummary,
+  ProtocolOutcomeSummary,
 } from "./types";
 export { DataOrigin, ExclusionStatus, ExclusionReason } from "./types";
 
@@ -47,7 +56,7 @@ export {
   validateContributorRecordCollection,
 } from "./validation";
 
-// Pipeline (structural aggregation; M-004 signal extraction not included)
+// Pipeline (structural aggregation and segmentation; M-004 signal extraction not included)
 export {
   filterAnalyticsEligible,
   aggregateCohortMetrics,
@@ -55,3 +64,28 @@ export {
   segmentByProtocol,
   runProtocolSegmentPipeline,
 } from "./pipeline";
+
+// Signals — structural observable signals from eligible contributor records
+export {
+  extractAdherenceSignal,
+  extractAdherenceSignals,
+  extractProtocolCompletionSignal,
+  extractProtocolCompletionSignals,
+  extractOilUsageFrequencySignals,
+  extractChallengeParticipationSignal,
+  extractChallengeParticipationSignals,
+} from "./signals";
+
+// Scoring — structural protocol, blend, and contributor scores
+export {
+  computeProtocolEffectivenessScore,
+  computeBlendSynergyInfluenceSignals,
+  computeContributorReliabilityScore,
+} from "./scoring";
+
+// Aggregator — contributor activity, protocol outcomes, signal normalization
+export {
+  aggregateContributorActivity,
+  aggregateProtocolOutcomes,
+  normalizeSignalValue,
+} from "./aggregator";
