@@ -23,7 +23,6 @@
 | `copilot/add-architecture-control-layer` | 1 | 41 | None | 🗑️ Stale (merged via PR #3) | Delete branch |
 | `copilot/add-challenge-engine-foundation-slice` | 0 | 26 | None | 🗑️ Stale (merged via PR #9) | Delete branch |
 | `copilot/create-readme-file-content` | 1 | 2 | None | 🗑️ Stale (merged via PR #19) | Delete branch |
-| `copilot/implement-analytics-intelligence-layer` | 2 | 21 | None | 🔶 Unmerged valuable work | See below |
 | `copilot/initiate-phase-4-persistence-layer` | 0 | 15 | None | 🗑️ Stale (Phase 4 complete in main) | Delete branch |
 | `copilot/mvp-production-deployment-plan` | 0 | 1 | None | 🗑️ Stale | Delete branch |
 | `copilot/phase-1-core-domain-implementation` | 0 | 38 | None | 🗑️ Stale (merged via PR #5) | Delete branch |
