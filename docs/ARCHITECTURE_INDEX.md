@@ -12,8 +12,17 @@ This index is the authoritative map of all files, modules, and documents in the 
 |------|-------------|--------|
 | `CLAUDE.md` | AI agent behavioral constraints and reading order | ✅ |
 | `AGENTS.md` | Agent roles, authority matrix, and communication contracts | ✅ |
-| `SWARM_PROMPT_STAGED.md` | Staged swarm execution prompts | ⬜ |
 | `README.md` | Project overview | ⬜ |
+
+---
+
+## /devos — DevOS Workflow Templates
+
+| File | Description | Locked |
+|------|-------------|--------|
+| `devos/README.md` | Scope note for reusable DevOS governance artifacts | ⬜ |
+| `devos/prompts/SWARM_PROMPT_STAGED.md` | Staged swarm execution prompt template | ⬜ |
+| `devos/runbooks/devos_execution_plan.md` | Production-readiness audit runbook template | ⬜ |
 
 ---
 
@@ -31,6 +40,8 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `docs/orchestrator_reading_order.md` | Canonical reading order for orchestrator bootstrap | ✅ |
 | `docs/BRANCH_TRIAGE.md` | Remote branch triage matrix — classification and cleanup actions | ⬜ |
 | `docs/PR_BRANCHING_RULES.md` | PR branching governance — one feature per PR, stacked PR exception rules, and merge-order documentation requirements | ⬜ |
+| `docs/ADR-013_ANALYTICS_INTELLIGENCE_SIGNAL_LAYER.md` | ADR for analytics intelligence signal layer | ⬜ |
+| `docs/ADR-014_DEVOS_ARTIFACT_SCOPING.md` | ADR for relocating reusable DevOS artifacts under `devos/` | ⬜ |
 
 ---
 
@@ -102,12 +113,18 @@ This index is the authoritative map of all files, modules, and documents in the 
 
 | File | Description |
 |------|-------------|
-| `src/analytics/types.ts` | TypeScript types: DataOrigin, ExclusionStatus, ExclusionReason enums; ContributorRecord, CohortMetrics, AnalyticsPipelineResult, ProtocolCohortSegment, ProtocolSegmentReport, validation result types |
+| `src/analytics/types.ts` | TypeScript types: DataOrigin, ExclusionStatus, ExclusionReason enums; ContributorRecord, CohortMetrics, AnalyticsPipelineResult, ProtocolCohortSegment, ProtocolSegmentReport, validation result types plus structural signal/scoring/aggregation types |
 | `src/analytics/schema.ts` | Field-level constraint schema; ADHERENCE_EXCLUSION_THRESHOLD constant |
 | `src/analytics/validation.ts` | validateContributorRecord() and validateContributorRecordCollection() enforcing LOCK-003 rules |
 | `src/analytics/pipeline.ts` | filterAnalyticsEligible(), aggregateCohortMetrics(), runAnalyticsPipeline(), segmentByProtocol(), runProtocolSegmentPipeline() — structural aggregation and per-protocol segmentation (M-004 boundary respected) |
+| `src/analytics/signals.ts` | Structural observable signal extraction from analytics-eligible contributor records |
+| `src/analytics/scoring.ts` | Structural scoring primitives for protocol effectiveness, blend co-occurrence, and contributor reliability |
+| `src/analytics/aggregator.ts` | Contributor/protocol aggregation and normalization utilities |
 | `src/analytics/index.ts` | Public module interface |
 | `src/analytics/__tests__/analytics.test.ts` | Contributor analytics validation, pipeline, and segmentation tests |
+| `src/analytics/__tests__/signals.test.ts` | Unit tests for structural signal extraction |
+| `src/analytics/__tests__/scoring.test.ts` | Unit tests for structural scoring utilities |
+| `src/analytics/__tests__/aggregator.test.ts` | Unit tests for aggregation utilities |
 
 ### /src/simulation — Files
 

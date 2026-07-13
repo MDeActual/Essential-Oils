@@ -11,7 +11,7 @@
 |--------|------:|-------:|---------|----------------|--------|
 | `main` | — | — | — | ✅ Baseline | Keep |
 | `copilot/implement-analytics-intelligence-layer` | 2 | 21 | None | 🔶 Unmerged valuable work | Human review → merge or open PR |
-| `copilot/devos-gap-analysis` | 2 | 2 | None | 🔶 Minor org work | Human review → merge or close |
+| `copilot/devos-gap-analysis` | 2 | 2 | None | 🔶 Minor org work | Reconstruct as fresh PR from current `main` |
 | `copilot/analyze-repo-and-suggest-next-move` | 1 | 1 | #21 open | ⚠️ No-op (Initial plan only) | Close PR, delete branch |
 | `copilot/read-readme-file` | 1 | 1 | #22 open | ⚠️ No-op (triage only) | Close PR, delete branch |
 | `copilot/suggest-next-mvp-deployment` | 2 | 1 | #23 open | ⚠️ Superseded (npm start landed in main via PR #20) | Close PR, delete branch |
@@ -58,23 +58,23 @@
 
 ### 🔶 `copilot/devos-gap-analysis`
 
-**What it adds** (not in `main`):
+**What it adds** (not in original `main` at time of triage):
 - `devos/README.md` — explains DevOS artifacts are cross-project templates, not runtime code
 - Moves `SWARM_PROMPT_STAGED.md` → `devos/prompts/SWARM_PROMPT_STAGED.md`
 - Moves `devos_execution_plan.md` → `devos/runbooks/devos_execution_plan.md`
 - Updates `docs/ARCHITECTURE_INDEX.md` to reflect new paths
 
-**Governance check**: No source code or test changes. Reorganizes DevOS cross-project artifacts that don't belong at the repo root.
+**Governance check**: No source code or test changes. Reorganizes DevOS cross-project artifacts that do not belong at the repo root.
 
-**Complication**: 2 commits behind `main`. The file moves conflict with the current root-level `SWARM_PROMPT_STAGED.md` and `devos_execution_plan.md` in `main`.
+**Complication**: The original branch became stale relative to current `main`, so the safe approach is a fresh reconstruction branch rather than a direct merge.
 
-**Recommended action**: Human project lead decides whether DevOS artifacts belong here at all (they're cross-project templates per DevOS design). If yes, open a rebase PR; if no, close the branch.
+**Recommended action**: Reconstruct as a fresh governance PR from current `main`, update active references, and close/delete the stale `copilot/devos-gap-analysis` branch after the replacement lands.
 
 ---
 
 ## Open PRs to Close
 
-The following PRs have open status but contain no actionable code changes. They can be closed without data loss:
+The following PRs had open status but contained no actionable code changes. They were safe to close without data loss:
 
 | PR | Branch | Reason |
 |----|--------|--------|
@@ -91,7 +91,7 @@ These gaps should be resolved before starting Phase 5:
 
 1. **Phase 4 human review** — `.claude/current_phase.md` exit criterion #8 (human project lead review) is still pending.
 2. **Staging DB verification** — `POST_PR17_AUDIT.md` marks DB-backed mode as NOT TESTED. Must run `prisma migrate deploy` + seed + endpoint check against a live PostgreSQL instance before production launch.
-3. **Analytics intelligence layer** — `signals.ts`, `scoring.ts`, `aggregator.ts` were built on a branch but never merged. These are Phase 2 deliverables that remain missing from `main`.
+3. **Analytics intelligence layer** — `signals.ts`, `scoring.ts`, `aggregator.ts` were built on a branch but never merged at time of triage. Replacement PR #27 later reconstructed and merged this work.
 4. **Missing spec docs** — `docs/` still lacks `natural_remedy_ontology.md`, `challenge_engine_specification.md`, `protocol_evolution_system.md`, and the synthetic simulation specification, referenced by the orchestrator reading order.
 
 ---
@@ -104,6 +104,5 @@ These gaps should be resolved before starting Phase 5:
 **Delete stale branches** (GitHub UI → Branches → Delete, or `git push origin --delete <branch>`):
 All branches classified 🗑️ above.
 
-**Do not delete** until reviewed:
-- `copilot/implement-analytics-intelligence-layer`
+**Do not delete** until replacement work lands:
 - `copilot/devos-gap-analysis`
