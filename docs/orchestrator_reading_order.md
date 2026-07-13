@@ -34,7 +34,7 @@ After completing the reading sequence, the Swarm Orchestrator must confirm:
 - [ ] No locked decisions in `docs/ARCHITECTURE_LOCK.md` conflict with the current task.
 - [ ] All analytics-eligible data paths have been reviewed against LOCK-003 rules.
 - [ ] Moat boundaries have been reviewed; no task output risks exposing proprietary components.
-- [ ] A structured task queue can be emitted (see `SWARM_PROMPT_STAGED.md` Stage 2).
+- [ ] A structured task queue can be emitted (see `devos/prompts/SWARM_PROMPT_STAGED.md` Stage 2).
 
 If any checklist item cannot be confirmed, emit `{ "preflight": "NO-GO", "reason": "..." }` and halt.
 
@@ -50,6 +50,6 @@ If any checklist item cannot be confirmed, emit `{ "preflight": "NO-GO", "reason
 
 ## References
 
-- `SWARM_PROMPT_STAGED.md` — staged swarm execution prompts (Stage 0 pre-flight, Stage 1 domain grounding, Stage 2 task assignment, Stage 3 execution)
+- `devos/prompts/SWARM_PROMPT_STAGED.md` — staged swarm execution prompts (Stage 0 pre-flight, Stage 1 domain grounding, Stage 2 task assignment, Stage 3 execution)
 - `docs/swarm_rules.md` — execution and data integrity rules
 - `AGENTS.md` — authority matrix
