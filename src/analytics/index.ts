@@ -22,6 +22,8 @@ export type {
   RecordId,
   CohortMetrics,
   AnalyticsPipelineResult,
+  ProtocolCohortSegment,
+  ProtocolSegmentReport,
   AnalyticsValidationError,
   AnalyticsValidationResult,
   AnalyticsError,
@@ -54,11 +56,13 @@ export {
   validateContributorRecordCollection,
 } from "./validation";
 
-// Pipeline (structural aggregation; M-004 signal extraction not included)
+// Pipeline (structural aggregation and segmentation; M-004 signal extraction not included)
 export {
   filterAnalyticsEligible,
   aggregateCohortMetrics,
   runAnalyticsPipeline,
+  segmentByProtocol,
+  runProtocolSegmentPipeline,
 } from "./pipeline";
 
 // Signals — structural observable signals from eligible contributor records
