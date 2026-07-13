@@ -29,6 +29,7 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `docs/autonomous_iteration_protocol.md` | Rules for autonomous protocol evolution | ⬜ |
 | `docs/swarm_rules.md` | Data integrity and multi-agent execution rules | ✅ |
 | `docs/orchestrator_reading_order.md` | Canonical reading order for orchestrator bootstrap | ✅ |
+| `docs/BRANCH_TRIAGE.md` | Remote branch triage matrix — classification and cleanup actions | ⬜ |
 
 ---
 
