@@ -22,11 +22,18 @@ export type {
   RecordId,
   CohortMetrics,
   AnalyticsPipelineResult,
-  ProtocolCohortSegment,
-  ProtocolSegmentReport,
   AnalyticsValidationError,
   AnalyticsValidationResult,
   AnalyticsError,
+  AdherenceSignal,
+  ProtocolCompletionSignal,
+  OilUsageFrequencySignal,
+  ChallengeParticipationSignal,
+  ProtocolEffectivenessScore,
+  BlendSynergyInfluenceSignal,
+  ContributorReliabilityScore,
+  ContributorActivitySummary,
+  ProtocolOutcomeSummary,
 } from "./types";
 export { DataOrigin, ExclusionStatus, ExclusionReason } from "./types";
 
@@ -52,6 +59,29 @@ export {
   filterAnalyticsEligible,
   aggregateCohortMetrics,
   runAnalyticsPipeline,
-  segmentByProtocol,
-  runProtocolSegmentPipeline,
 } from "./pipeline";
+
+// Signals — structural observable signals from eligible contributor records
+export {
+  extractAdherenceSignal,
+  extractAdherenceSignals,
+  extractProtocolCompletionSignal,
+  extractProtocolCompletionSignals,
+  extractOilUsageFrequencySignals,
+  extractChallengeParticipationSignal,
+  extractChallengeParticipationSignals,
+} from "./signals";
+
+// Scoring — structural protocol, blend, and contributor scores
+export {
+  computeProtocolEffectivenessScore,
+  computeBlendSynergyInfluenceSignals,
+  computeContributorReliabilityScore,
+} from "./scoring";
+
+// Aggregator — contributor activity, protocol outcomes, signal normalization
+export {
+  aggregateContributorActivity,
+  aggregateProtocolOutcomes,
+  normalizeSignalValue,
+} from "./aggregator";
