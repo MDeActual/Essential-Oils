@@ -11,7 +11,7 @@
 
 ## Phase Description
 
-Phase 4 introduces the database persistence layer using Prisma. All deliverables are complete: Prisma schema, repository interfaces, Prisma-backed implementations, migration scripts, API controller wiring, runtime entry point (`src/index.ts`), and governance docs. The API runs in-memory-fallback mode without `DATABASE_URL`, and full Prisma-backed mode when connected to PostgreSQL. All 531 tests pass. Awaiting human project lead review (exit criterion #8) and staging DB verification before production launch.
+Phase 4 introduces the database persistence layer using Prisma. All deliverables are complete: Prisma schema, repository interfaces, Prisma-backed implementations, migration scripts, API controller wiring, runtime entry point (`src/index.ts`), and governance docs. The API runs in-memory-fallback mode without `DATABASE_URL`, and full Prisma-backed mode when connected to PostgreSQL. The full automated test suite passes. Awaiting human project lead review (exit criterion #8) and staging DB verification before production launch.
 
 ---
 
@@ -48,7 +48,7 @@ Phase 4 introduces the database persistence layer using Prisma. All deliverables
 4. Repository interfaces are defined for all five models. ✅
 5. No existing API routes/controllers modified. ✅
 6. No auth changes. ✅
-7. All 497 existing tests pass. ✅
+7. The full automated test suite passes. ✅
 8. Human project lead has reviewed Phase 4 slice. ⬜ (pending)
 
 ---
