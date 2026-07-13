@@ -14,7 +14,7 @@ Before any agent takes action in a swarm workflow, the Swarm Orchestrator must c
 2. The active development phase is confirmed from `.claude/current_phase.md`.
 3. No locked architectural decisions in `docs/ARCHITECTURE_LOCK.md` conflict with the current task.
 
-Agents must not begin execution until the Swarm Orchestrator emits a `GO` pre-flight signal (see `SWARM_PROMPT_STAGED.md` Stage 0).
+Agents must not begin execution until the Swarm Orchestrator emits a `GO` pre-flight signal (see `devos/prompts/SWARM_PROMPT_STAGED.md` Stage 0).
 
 ---
 
@@ -85,6 +85,6 @@ All agents must respect the moat boundaries defined in `docs/MOAT_MODEL.md`.
 - `AGENTS.md` — agent roles and authority matrix
 - `docs/ARCHITECTURE_LOCK.md` — frozen decisions
 - `docs/MOAT_MODEL.md` — IP boundaries
-- `SWARM_PROMPT_STAGED.md` — staged execution prompts
+- `devos/prompts/SWARM_PROMPT_STAGED.md` — staged execution prompts
 - `src/analytics/validation.ts` — analytics integrity enforcement
 - `src/simulation/validation.ts` — simulation isolation enforcement
