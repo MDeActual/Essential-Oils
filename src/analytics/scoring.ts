@@ -29,19 +29,6 @@ import {
 // Protocol effectiveness score
 // ---------------------------------------------------------------------------
 
-/**
- * Computes a structural protocol effectiveness score for a single protocol, based
- * on the arithmetic mean of average adherence and average challenge completion rate
- * across analytics-eligible contributors.
- *
- * MOAT NOTICE (M-004): This score is a structural aggregate only.
- *
- * @param protocolId - The protocol to score.
- * @param eligibleRecords - Analytics-eligible records (LOCK-003 pre-filtered).
- *                          Records not matching protocolId are ignored.
- * @returns A ProtocolEffectivenessScore. Score is 0 and sampleSize is 0 when no
- *          eligible records reference the given protocolId.
- */
 export function computeProtocolEffectivenessScore(
   protocolId: string,
   eligibleRecords: ContributorRecord[]
@@ -72,42 +59,52 @@ export function computeProtocolEffectivenessScore(
 // Blend synergy influence signals
 // ---------------------------------------------------------------------------
 
+interface ProtocolRecordAggregate {
+  observationCount: number;
+  adherenceSum: number;
+}
+
 /**
- * Computes blend synergy influence signals for a set of blend IDs.
+ * Computes structural blend co-occurrence signals without repeated full-array scans.
  *
- * For each blendId, the signal records how many analytics-eligible contributor
- * records are associated with protocols that reference the blend (via protocolId
- * lookup), along with the average adherence of those records.
- *
- * Since this module does not hold a blend-to-protocol mapping, callers supply a
- * `blendProtocolMap` that maps each blendId to the set of protocolIds it is used in.
- *
- * MOAT NOTICE (M-001): This function produces structural co-occurrence data only.
- * The synergy scoring matrix (M-001) and its computation are moat-protected and
- * are NOT referenced or replicated here.
- *
- * @param blendProtocolMap - A mapping from blendId to the set of protocolIds
- *                           that reference the blend.
- * @param eligibleRecords  - Analytics-eligible records (LOCK-003 pre-filtered).
- * @returns Array of BlendSynergyInfluenceSignal, one per blendId.
+ * Records are first indexed by protocolId, then each blend aggregates over the
+ * protocol IDs supplied by the caller. This keeps the function bounded by the
+ * number of records plus the number of blend-protocol associations.
  */
 export function computeBlendSynergyInfluenceSignals(
   blendProtocolMap: ReadonlyMap<string, ReadonlySet<string>>,
   eligibleRecords: ContributorRecord[]
 ): BlendSynergyInfluenceSignal[] {
   const computedAt = new Date().toISOString();
+  const recordsByProtocol = new Map<string, ProtocolRecordAggregate>();
+
+  for (const record of eligibleRecords) {
+    const aggregate = recordsByProtocol.get(record.protocolId) ?? {
+      observationCount: 0,
+      adherenceSum: 0,
+    };
+    aggregate.observationCount += 1;
+    aggregate.adherenceSum += record.adherenceScore;
+    recordsByProtocol.set(record.protocolId, aggregate);
+  }
+
   const results: BlendSynergyInfluenceSignal[] = [];
 
   for (const [blendId, protocolIds] of blendProtocolMap) {
-    const matching = eligibleRecords.filter((r) => protocolIds.has(r.protocolId));
-    const observationCount = matching.length;
+    let observationCount = 0;
+    let adherenceSum = 0;
+
+    for (const protocolId of protocolIds) {
+      const aggregate = recordsByProtocol.get(protocolId);
+      if (!aggregate) continue;
+      observationCount += aggregate.observationCount;
+      adherenceSum += aggregate.adherenceSum;
+    }
+
     const averageProtocolAdherence =
       observationCount === 0
         ? 0
-        : Math.round(
-            (matching.reduce((sum, r) => sum + r.adherenceScore, 0) / observationCount) *
-              100
-          ) / 100;
+        : Math.round((adherenceSum / observationCount) * 100) / 100;
 
     results.push({ blendId, observationCount, averageProtocolAdherence, computedAt });
   }
@@ -119,18 +116,6 @@ export function computeBlendSynergyInfluenceSignals(
 // Contributor reliability score
 // ---------------------------------------------------------------------------
 
-/**
- * Computes a structural reliability score for a single contributor based on their
- * average adherence score across all analytics-eligible protocol runs.
- *
- * MOAT NOTICE (M-004): This score is a structural average only.
- *
- * @param userId         - The anonymized user identifier.
- * @param eligibleRecords - Analytics-eligible records (LOCK-003 pre-filtered).
- *                          Records not matching userId are ignored.
- * @returns A ContributorReliabilityScore. Score is 0 and recordCount is 0 when
- *          no eligible records reference the given userId.
- */
 export function computeContributorReliabilityScore(
   userId: string,
   eligibleRecords: ContributorRecord[]
