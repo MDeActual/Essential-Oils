@@ -1,0 +1,120 @@
+name: Post-PR17 Production Readiness Audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'prisma/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'prisma.config.ts'
+      - 'devos_execution_plan.md'
+      - '.github/workflows/post-pr17-audit.yml'
+
+jobs:
+  build-test-no-db:
+    name: Build, test, and no-DB API smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Test
+        run: npm test -- --runInBand
+      - name: Prisma validate
+        run: npx prisma validate
+      - name: Start API without DATABASE_URL
+        run: |
+          unset DATABASE_URL
+          npm start > /tmp/phyto-no-db.log 2>&1 &
+          echo $! > /tmp/phyto-no-db.pid
+          for i in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:3000/health > /tmp/health.json; then break; fi
+            sleep 1
+          done
+      - name: Verify no-DB endpoints
+        run: |
+          curl --fail --silent http://127.0.0.1:3000/health
+          curl --fail --silent http://127.0.0.1:3000/protocols
+          curl --fail --silent http://127.0.0.1:3000/analytics/protocols
+      - name: Stop no-DB API
+        if: always()
+        run: |
+          if [ -f /tmp/phyto-no-db.pid ]; then kill $(cat /tmp/phyto-no-db.pid) || true; fi
+          cat /tmp/phyto-no-db.log || true
+
+  postgres-migration-seed-api:
+    name: PostgreSQL migration, seed, and DB-backed API smoke test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: phyto
+          POSTGRES_PASSWORD: phyto
+          POSTGRES_DB: phyto_audit
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U phyto -d phyto_audit"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://phyto:phyto@127.0.0.1:5432/phyto_audit?schema=public
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Prisma validate
+        run: npx prisma validate
+      - name: Prisma migration status
+        run: npx prisma migrate status
+      - name: Apply migrations
+        run: npx prisma migrate deploy
+      - name: Seed disposable database
+        run: npx prisma db seed
+      - name: Build
+        run: npm run build
+      - name: Start DB-backed API
+        run: |
+          npm start > /tmp/phyto-db.log 2>&1 &
+          echo $! > /tmp/phyto-db.pid
+          for i in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:3000/health > /tmp/health-db.json; then break; fi
+            sleep 1
+          done
+      - name: Verify DB-backed endpoints
+        run: |
+          curl --fail --silent http://127.0.0.1:3000/health
+          curl --fail --silent http://127.0.0.1:3000/protocols
+          curl --fail --silent http://127.0.0.1:3000/analytics/protocols
+      - name: Stop DB-backed API
+        if: always()
+        run: |
+          if [ -f /tmp/phyto-db.pid ]; then kill $(cat /tmp/phyto-db.pid) || true; fi
+          cat /tmp/phyto-db.log || true
+
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scan repository for secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
