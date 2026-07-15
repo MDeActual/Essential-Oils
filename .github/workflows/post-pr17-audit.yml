@@ -12,6 +12,8 @@ on:
       - 'prisma.config.ts'
       - 'devos_execution_plan.md'
       - '.github/workflows/post-pr17-audit.yml'
+  pull_request:
+    branches: [main]
 
 jobs:
   build-test-no-db:
