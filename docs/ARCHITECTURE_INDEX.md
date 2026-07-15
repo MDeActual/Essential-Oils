@@ -16,6 +16,14 @@ This index is the authoritative map of all files, modules, and documents in the 
 
 ---
 
+## /.github — Repository Workflow
+
+| File | Description | Locked |
+|------|-------------|--------|
+| `.github/pull_request_template.md` | Pull request template with DevOS alignment checks | ⬜ |
+
+---
+
 ## /devos — DevOS Workflow Templates
 
 | File | Description | Locked |
@@ -23,6 +31,21 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `devos/README.md` | Scope note for reusable DevOS governance artifacts | ⬜ |
 | `devos/prompts/SWARM_PROMPT_STAGED.md` | Staged swarm execution prompt template | ⬜ |
 | `devos/runbooks/devos_execution_plan.md` | Production-readiness audit runbook template | ⬜ |
+
+---
+
+## /cloudmatrix — Cloud Matrix Operating System
+
+| File | Description | Locked |
+|------|-------------|--------|
+| `cloudmatrix/devos-foundation/README.md` | DevOS Foundation v0.1 file map and operating intent | ⬜ |
+| `cloudmatrix/devos-foundation/CLOUD_MATRIX_REFERENCE_ARCHITECTURE_v0.1.md` | Cloud Matrix / DevOS reference architecture | ⬜ |
+| `cloudmatrix/devos-foundation/CLOUD_MATRIX_CONSTITUTION.md` | Cloud Matrix operating principles | ⬜ |
+| `cloudmatrix/devos-foundation/DEVOS_COMMAND_CENTER.md` | Daily command center for priorities, decisions, blockers, and next actions | ⬜ |
+| `cloudmatrix/devos-foundation/AGENT_CHARTER_TEMPLATE.md` | Template for defining specialized Cloud Matrix agents | ⬜ |
+| `cloudmatrix/devos-foundation/DEVOS_ALIGNMENT_PR_CHECKLIST.md` | DevOS pull request alignment standard | ⬜ |
+| `cloudmatrix/devos-foundation/DECISION_ENGINE_CONTRACT.md` | Contract for turning context into recommendations and decisions | ⬜ |
+| `cloudmatrix/devos-foundation/METHODOLOGY_CHANGELOG.md` | Changelog for changes to Cloud Matrix operating methodology | ⬜ |
 
 ---
 
@@ -42,6 +65,7 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `docs/PR_BRANCHING_RULES.md` | PR branching governance — one feature per PR, stacked PR exception rules, and merge-order documentation requirements | ⬜ |
 | `docs/ADR-013_ANALYTICS_INTELLIGENCE_SIGNAL_LAYER.md` | ADR for analytics intelligence signal layer | ⬜ |
 | `docs/ADR-014_DEVOS_ARTIFACT_SCOPING.md` | ADR for relocating reusable DevOS artifacts under `devos/` | ⬜ |
+| `docs/ADR-015_CLOUD_MATRIX_DEVOS_FOUNDATION.md` | ADR for establishing Cloud Matrix DevOS Foundation v0.1 | ⬜ |
 
 ---
 
