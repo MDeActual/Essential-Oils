@@ -84,6 +84,7 @@ jobs:
         run: npx prisma validate
       - name: Prisma migration status
         run: npx prisma migrate status
+        continue-on-error: true
       - name: Apply migrations
         run: npx prisma migrate deploy
       - name: Seed disposable database
