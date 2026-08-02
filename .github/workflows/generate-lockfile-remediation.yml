@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - agent/phyto-dependency-remediation-v1
+  pull_request:
+    branches:
+      - audit/post-pr17-readiness
   workflow_dispatch:
 
 permissions:
