@@ -1,0 +1,113 @@
+name: Phyto Seed State Diagnostic
+
+on:
+  pull_request:
+    branches:
+      - audit/post-pr17-readiness
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: phyto
+          POSTGRES_PASSWORD: phyto
+          POSTGRES_DB: phyto_audit
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U phyto -d phyto_audit"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://phyto:phyto@127.0.0.1:5432/phyto_audit?schema=public
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install, migrate, verify parity, and seed
+        run: |
+          npm ci
+          npx prisma validate
+          npx prisma migrate deploy
+          npx prisma migrate diff --exit-code --from-config-datasource --to-schema=prisma/schema.prisma
+          npx prisma db seed
+      - name: Print direct PostgreSQL seed state
+        run: |
+          node <<'NODE'
+          const { Client } = require('pg');
+
+          async function main() {
+            const client = new Client({ connectionString: process.env.DATABASE_URL });
+            await client.connect();
+            const protocols = await client.query(
+              'SELECT "protocol_id", "status", "goal" FROM "protocols" ORDER BY "protocol_id"'
+            );
+            const contributors = await client.query(
+              'SELECT "record_id", "protocol_id", "data_origin", "exclusion_status" FROM "contributors" ORDER BY "record_id"'
+            );
+            console.log('protocol rows:', JSON.stringify(protocols.rows));
+            console.log('contributor rows:', JSON.stringify(contributors.rows));
+            await client.end();
+          }
+
+          main().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
+      - name: Build and print Prisma repository lookups
+        run: |
+          npm run build
+          node <<'NODE'
+          const { getPrismaClient } = require('./dist/db/client');
+
+          async function main() {
+            const prisma = getPrismaClient();
+            console.log('prisma protocol count:', await prisma.protocol.count());
+            console.log(
+              'prisma protocol-001:',
+              JSON.stringify(await prisma.protocol.findUnique({ where: { protocolId: 'protocol-001' } }))
+            );
+            await prisma.$disconnect();
+          }
+
+          main().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
+      - name: Start API and print endpoint responses
+        run: |
+          npm start > /tmp/phyto-db.log 2>&1 &
+          echo $! > /tmp/phyto-db.pid
+          ready=false
+          for i in {1..30}; do
+            if curl --silent --show-error --fail http://127.0.0.1:3000/health >/dev/null; then
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+          test "$ready" = true
+
+          for path in protocols protocols/protocol-001 analytics/protocols analytics/protocols/protocol-001; do
+            echo "=== /$path ==="
+            curl --silent --show-error --write-out '\nHTTP %{http_code}\n' "http://127.0.0.1:3000/$path"
+          done
+      - name: Print API log
+        if: always()
+        run: |
+          if [ -f /tmp/phyto-db.pid ]; then kill "$(cat /tmp/phyto-db.pid)" || true; fi
+          cat /tmp/phyto-db.log || true
