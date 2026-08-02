@@ -222,6 +222,11 @@ jobs:
         run: npx prisma migrate deploy
       - name: Verify migration status is clean
         run: npx prisma migrate status
+      - name: Verify database matches Prisma schema
+        run: >-
+          npx prisma migrate diff --exit-code
+          --from-config-datasource
+          --to-schema=prisma/schema.prisma
       - name: Seed disposable database
         run: npx prisma db seed
       - name: Add audit-only synthetic isolation sentinel
@@ -246,9 +251,9 @@ jobs:
             'audit-synthetic-record',
             'audit-synthetic-user',
             'protocol-001',
-            'SYNTHETIC_SIMULATION',
-            'EXCLUDED',
-            'SYNTHETIC_DATA',
+            'synthetic_simulation',
+            'excluded',
+            'synthetic_data',
             100,
             100,
             'Audit-only sentinel: must never influence real-contributor analytics.',
@@ -274,11 +279,23 @@ jobs:
           test "$ready" = true
       - name: Verify DB-backed endpoint status and analytics isolation
         run: |
-          curl --fail --silent http://127.0.0.1:3000/health > /tmp/health-db.json
-          curl --fail --silent http://127.0.0.1:3000/protocols > /tmp/protocols-db.json
-          curl --fail --silent http://127.0.0.1:3000/protocols/protocol-001 > /tmp/protocol-001-db.json
-          curl --fail --silent http://127.0.0.1:3000/analytics/protocols > /tmp/analytics-protocols-db.json
-          curl --fail --silent http://127.0.0.1:3000/analytics/protocols/protocol-001 > /tmp/analytics-protocol-001-db.json
+          fetch_json() {
+            label="$1"
+            url="$2"
+            output="$3"
+            status="$(curl --silent --show-error --output "$output" --write-out '%{http_code}' "$url")"
+            if [[ "$status" != 2* ]]; then
+              echo "::error::$label returned HTTP $status"
+              cat "$output" || true
+              exit 1
+            fi
+          }
+
+          fetch_json health http://127.0.0.1:3000/health /tmp/health-db.json
+          fetch_json protocols http://127.0.0.1:3000/protocols /tmp/protocols-db.json
+          fetch_json protocol-001 http://127.0.0.1:3000/protocols/protocol-001 /tmp/protocol-001-db.json
+          fetch_json analytics-protocols http://127.0.0.1:3000/analytics/protocols /tmp/analytics-protocols-db.json
+          fetch_json analytics-protocol-001 http://127.0.0.1:3000/analytics/protocols/protocol-001 /tmp/analytics-protocol-001-db.json
 
           node <<'NODE'
           const fs = require('node:fs');
