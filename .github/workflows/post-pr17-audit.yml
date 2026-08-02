@@ -1,4 +1,4 @@
-name: Post-PR17 Production Readiness Audit
+name: Phyto Production Readiness Audit
 
 on:
   workflow_dispatch:
@@ -11,22 +11,112 @@ on:
       - 'package-lock.json'
       - 'prisma.config.ts'
       - 'devos_execution_plan.md'
+      - 'devos/runbooks/devos_execution_plan.md'
       - '.github/workflows/post-pr17-audit.yml'
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: phyto-readiness-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-test-no-db:
-    name: Build, test, and no-DB API smoke test
+    name: Build, test, dependency evidence, and no-DB API smoke test
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Capture dependency audit evidence
+        id: dependency-audit
+        run: |
+          set +e
+          npm audit --json > /tmp/npm-audit-all.json
+          all_status=$?
+          npm audit --omit=dev --json > /tmp/npm-audit-production.json
+          production_status=$?
+          set -e
+
+          echo "Full dependency audit exit code: $all_status"
+          echo "Production dependency audit exit code: $production_status"
+
+          ALL_STATUS="$all_status" PRODUCTION_STATUS="$production_status" node <<'NODE'
+          const fs = require('node:fs');
+
+          function report(file, label, exitCode) {
+            if (!fs.existsSync(file)) {
+              throw new Error(`${label} audit evidence is missing (exit code ${exitCode}).`);
+            }
+
+            let parsed;
+            try {
+              parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+            } catch (error) {
+              throw new Error(`${label} audit did not return valid JSON (exit code ${exitCode}): ${error.message}`);
+            }
+
+            if (!parsed.metadata || typeof parsed.metadata.vulnerabilities !== 'object') {
+              const serviceError = parsed.error ? JSON.stringify(parsed.error) : 'no npm service error details';
+              throw new Error(
+                `${label} audit returned no vulnerability metadata (exit code ${exitCode}; ${serviceError}).`
+              );
+            }
+
+            return parsed;
+          }
+
+          function viaSummary(via) {
+            return (via ?? []).map((entry) =>
+              typeof entry === 'string'
+                ? entry
+                : `${entry.source ?? 'advisory'}:${entry.title ?? entry.name ?? 'unknown'} (${entry.severity ?? 'unknown'})`
+            );
+          }
+
+          const all = report('/tmp/npm-audit-all.json', 'Full dependency', process.env.ALL_STATUS);
+          const production = report(
+            '/tmp/npm-audit-production.json',
+            'Production dependency',
+            process.env.PRODUCTION_STATUS
+          );
+
+          console.log('All dependencies:', all.metadata.vulnerabilities);
+          console.log('Production dependencies:', production.metadata.vulnerabilities);
+          for (const [name, finding] of Object.entries(production.vulnerabilities ?? {})) {
+            console.log(JSON.stringify({
+              name,
+              severity: finding.severity,
+              direct: finding.isDirect,
+              range: finding.range,
+              via: viaSummary(finding.via),
+              fixAvailable: finding.fixAvailable
+            }));
+          }
+          NODE
+      - name: Upload dependency audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-evidence
+          path: |
+            /tmp/npm-audit-all.json
+            /tmp/npm-audit-production.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Build
         run: npm run build
       - name: Test
@@ -38,24 +128,66 @@ jobs:
           unset DATABASE_URL
           npm start > /tmp/phyto-no-db.log 2>&1 &
           echo $! > /tmp/phyto-no-db.pid
+          ready=false
           for i in {1..30}; do
-            if curl --fail --silent http://127.0.0.1:3000/health > /tmp/health.json; then break; fi
+            if curl --fail --silent http://127.0.0.1:3000/health > /tmp/health.json; then
+              ready=true
+              break
+            fi
             sleep 1
           done
+          test "$ready" = true
       - name: Verify no-DB endpoints
         run: |
           curl --fail --silent http://127.0.0.1:3000/health
           curl --fail --silent http://127.0.0.1:3000/protocols
+          curl --fail --silent http://127.0.0.1:3000/protocols/protocol-001
           curl --fail --silent http://127.0.0.1:3000/analytics/protocols
+          curl --fail --silent http://127.0.0.1:3000/analytics/protocols/protocol-001
       - name: Stop no-DB API
         if: always()
         run: |
-          if [ -f /tmp/phyto-no-db.pid ]; then kill $(cat /tmp/phyto-no-db.pid) || true; fi
+          if [ -f /tmp/phyto-no-db.pid ]; then kill "$(cat /tmp/phyto-no-db.pid)" || true; fi
           cat /tmp/phyto-no-db.log || true
+      - name: Enforce production dependency gate
+        if: always()
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const file = '/tmp/npm-audit-production.json';
+          if (!fs.existsSync(file)) {
+            console.error('Production dependency audit evidence is missing.');
+            process.exit(1);
+          }
+
+          let report;
+          try {
+            report = JSON.parse(fs.readFileSync(file, 'utf8'));
+          } catch (error) {
+            console.error(`Production dependency audit evidence is invalid JSON: ${error.message}`);
+            process.exit(1);
+          }
+
+          if (!report.metadata || typeof report.metadata.vulnerabilities !== 'object') {
+            console.error('Production dependency audit contains no vulnerability metadata.');
+            if (report.error) console.error(JSON.stringify(report.error));
+            process.exit(1);
+          }
+
+          const vulnerabilities = report.metadata.vulnerabilities;
+          const high = Number(vulnerabilities.high ?? 0);
+          const critical = Number(vulnerabilities.critical ?? 0);
+          console.log('Production dependency gate:', vulnerabilities);
+          if (high > 0 || critical > 0) {
+            console.error(`Production dependency audit contains ${high} high and ${critical} critical vulnerabilities.`);
+            process.exit(1);
+          }
+          NODE
 
   postgres-migration-seed-api:
     name: PostgreSQL migration, seed, and DB-backed API smoke test
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     services:
       postgres:
         image: postgres:16
@@ -73,8 +205,12 @@ jobs:
     env:
       DATABASE_URL: postgresql://phyto:phyto@127.0.0.1:5432/phyto_audit?schema=public
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: npm
@@ -82,40 +218,142 @@ jobs:
         run: npm ci
       - name: Prisma validate
         run: npx prisma validate
-      - name: Prisma migration status
-        run: npx prisma migrate status
-      - name: Apply migrations
+      - name: Apply migrations to fresh disposable database
         run: npx prisma migrate deploy
+      - name: Verify migration status is clean
+        run: npx prisma migrate status
+      - name: Verify database matches Prisma schema
+        run: >-
+          npx prisma migrate diff --exit-code
+          --from-config-datasource
+          --to-schema=prisma/schema.prisma
       - name: Seed disposable database
         run: npx prisma db seed
+      - name: Add audit-only synthetic isolation sentinel
+        run: |
+          npx prisma db execute --stdin <<'SQL'
+          INSERT INTO "contributors" (
+            "id",
+            "record_id",
+            "user_id",
+            "protocol_id",
+            "data_origin",
+            "exclusion_status",
+            "exclusion_reason",
+            "adherence_score",
+            "challenge_completion_rate",
+            "outcome_notes",
+            "recorded_at",
+            "created_at",
+            "updated_at"
+          ) VALUES (
+            'audit-synthetic-id',
+            'audit-synthetic-record',
+            'audit-synthetic-user',
+            'protocol-001',
+            'synthetic_simulation',
+            'excluded',
+            'synthetic_data',
+            100,
+            100,
+            'Audit-only sentinel: must never influence real-contributor analytics.',
+            CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP
+          );
+          SQL
       - name: Build
         run: npm run build
       - name: Start DB-backed API
         run: |
           npm start > /tmp/phyto-db.log 2>&1 &
           echo $! > /tmp/phyto-db.pid
+          ready=false
           for i in {1..30}; do
-            if curl --fail --silent http://127.0.0.1:3000/health > /tmp/health-db.json; then break; fi
+            if curl --fail --silent http://127.0.0.1:3000/health > /tmp/health-db.json; then
+              ready=true
+              break
+            fi
             sleep 1
           done
-      - name: Verify DB-backed endpoints
+          test "$ready" = true
+      - name: Verify DB-backed endpoint status and analytics isolation
         run: |
-          curl --fail --silent http://127.0.0.1:3000/health
-          curl --fail --silent http://127.0.0.1:3000/protocols
-          curl --fail --silent http://127.0.0.1:3000/analytics/protocols
+          fetch_json() {
+            label="$1"
+            url="$2"
+            output="$3"
+            status="$(curl --silent --show-error --output "$output" --write-out '%{http_code}' "$url")"
+            if [[ "$status" != 2* ]]; then
+              echo "::error::$label returned HTTP $status"
+              cat "$output" || true
+              exit 1
+            fi
+          }
+
+          fetch_json health http://127.0.0.1:3000/health /tmp/health-db.json
+          fetch_json protocols http://127.0.0.1:3000/protocols /tmp/protocols-db.json
+          fetch_json protocol-001 http://127.0.0.1:3000/protocols/protocol-001 /tmp/protocol-001-db.json
+          fetch_json analytics-protocols http://127.0.0.1:3000/analytics/protocols /tmp/analytics-protocols-db.json
+          fetch_json analytics-protocol-001 http://127.0.0.1:3000/analytics/protocols/protocol-001 /tmp/analytics-protocol-001-db.json
+
+          node <<'NODE'
+          const fs = require('node:fs');
+
+          function read(file) {
+            return JSON.parse(fs.readFileSync(file, 'utf8'));
+          }
+
+          function assertEqual(actual, expected, label) {
+            if (actual !== expected) {
+              throw new Error(`${label}: expected ${expected}, received ${actual}`);
+            }
+          }
+
+          const list = read('/tmp/analytics-protocols-db.json');
+          const detail = read('/tmp/analytics-protocol-001-db.json');
+
+          assertEqual(list.success, true, 'analytics list success');
+          assertEqual(list.data.protocolCount, 2, 'protocol count');
+          assertEqual(list.data.totalEligibleRecords, 3, 'total eligible real-contributor records');
+          assertEqual(list.data.totalExcludedRecords, 1, 'total excluded real-contributor records');
+
+          const segment = list.data.segments.find((item) => item.protocolId === 'protocol-001');
+          if (!segment) throw new Error('protocol-001 analytics segment is missing');
+          assertEqual(segment.eligibleRecordCount, 2, 'protocol-001 eligible record count');
+          assertEqual(segment.averageAdherenceScore, 77.5, 'protocol-001 average adherence');
+          assertEqual(segment.averageChallengeCompletionRate, 82.5, 'protocol-001 average completion');
+
+          assertEqual(detail.success, true, 'analytics detail success');
+          assertEqual(detail.data.eligibleRecordCount, 2, 'detail eligible record count');
+          assertEqual(detail.data.excludedRecordCount, 1, 'detail excluded real-contributor count');
+          assertEqual(detail.data.averageAdherenceScore, 77.5, 'detail average adherence');
+          assertEqual(detail.data.minAdherenceScore, 70, 'detail minimum adherence');
+          assertEqual(detail.data.maxAdherenceScore, 85, 'detail maximum adherence');
+          assertEqual(
+            detail.data.exclusionBreakdown.adherence_below_threshold,
+            1,
+            'low-adherence exclusion count'
+          );
+
+          console.log('DB-backed analytics isolation assertions passed.');
+          NODE
       - name: Stop DB-backed API
         if: always()
         run: |
-          if [ -f /tmp/phyto-db.pid ]; then kill $(cat /tmp/phyto-db.pid) || true; fi
+          if [ -f /tmp/phyto-db.pid ]; then kill "$(cat /tmp/phyto-db.pid)" || true; fi
           cat /tmp/phyto-db.log || true
 
   secret-scan:
     name: Secret scan
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out full history
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Scan repository for secrets
         uses: gitleaks/gitleaks-action@v2
         env:

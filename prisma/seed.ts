@@ -1,143 +1,208 @@
 import "dotenv/config";
 
-import { PrismaClient } from "../src/generated/prisma";
-
-import { ProtocolStatus } from "../src/protocol/types";
-import { DataOrigin, ExclusionReason, ExclusionStatus } from "../src/analytics/types";
+import { Client } from "pg";
 
 import { getAllProtocols } from "../src/api/controllers/protocolStore";
 import { getAllContributorRecords } from "../src/api/controllers/analyticsStore";
 
-function protocolStatusToDb(
-  status: ProtocolStatus
-): "DRAFT" | "ACTIVE" | "COMPLETED" | "DEPRECATED" {
-  switch (status) {
-    case ProtocolStatus.Draft:
-      return "DRAFT";
-    case ProtocolStatus.Active:
-      return "ACTIVE";
-    case ProtocolStatus.Completed:
-      return "COMPLETED";
-    case ProtocolStatus.Deprecated:
-      return "DEPRECATED";
+function requireConnectionString(): string {
+  const connectionString = process.env["DATABASE_URL"];
+  if (!connectionString) {
+    throw new Error("DATABASE_URL is required to seed the database.");
+  }
+  return connectionString;
+}
+
+async function seedDatabase(connectionString: string): Promise<void> {
+  const protocols = [...getAllProtocols()];
+  const contributorRecords = [...getAllContributorRecords()];
+
+  if (protocols.length === 0 || contributorRecords.length === 0) {
+    throw new Error(
+      `Seed sources must be non-empty; received ${protocols.length} protocols and ${contributorRecords.length} contributor records.`
+    );
+  }
+
+  const client = new Client({ connectionString });
+  await client.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    // Clear existing rows in dependency order to keep the seed idempotent.
+    await client.query('DELETE FROM "outcome_logs"');
+    await client.query('DELETE FROM "challenges"');
+    await client.query('DELETE FROM "contributors"');
+    await client.query('DELETE FROM "blends"');
+    await client.query('DELETE FROM "protocols"');
+
+    for (const protocol of protocols) {
+      await client.query(
+        `
+          INSERT INTO "protocols" (
+            "id",
+            "protocol_id",
+            "version",
+            "user_profile_id",
+            "goal",
+            "duration_days",
+            "status",
+            "phases",
+            "challenge_ids",
+            "created_at",
+            "updated_at"
+          ) VALUES (
+            $1,
+            $2,
+            $3,
+            $4,
+            $5,
+            $6,
+            $7::"ProtocolStatus",
+            $8::jsonb,
+            $9::text[],
+            $10,
+            $11
+          )
+        `,
+        [
+          `seed-protocol-${protocol.protocolId}`,
+          protocol.protocolId,
+          protocol.version,
+          protocol.userProfileId,
+          protocol.goal,
+          protocol.durationDays,
+          protocol.status,
+          JSON.stringify(protocol.phases),
+          [...protocol.challengeIds],
+          new Date(protocol.createdAt),
+          new Date(),
+        ]
+      );
+    }
+
+    for (const record of contributorRecords) {
+      await client.query(
+        `
+          INSERT INTO "contributors" (
+            "id",
+            "record_id",
+            "user_id",
+            "protocol_id",
+            "data_origin",
+            "exclusion_status",
+            "exclusion_reason",
+            "adherence_score",
+            "challenge_completion_rate",
+            "outcome_notes",
+            "recorded_at",
+            "updated_at"
+          ) VALUES (
+            $1,
+            $2,
+            $3,
+            $4,
+            $5::"DataOrigin",
+            $6::"ExclusionStatus",
+            $7::"ExclusionReason",
+            $8,
+            $9,
+            $10,
+            $11,
+            $12
+          )
+        `,
+        [
+          `seed-contributor-${record.recordId}`,
+          record.recordId,
+          record.userId,
+          record.protocolId,
+          record.dataOrigin,
+          record.exclusionStatus,
+          record.exclusionReason ?? null,
+          record.adherenceScore,
+          record.challengeCompletionRate,
+          record.outcomeNotes ?? null,
+          new Date(record.recordedAt),
+          new Date(),
+        ]
+      );
+    }
+
+    await client.query("COMMIT");
+  } catch (error) {
+    try {
+      await client.query("ROLLBACK");
+    } catch (rollbackError) {
+      // eslint-disable-next-line no-console
+      console.error("Seed rollback failed:", rollbackError);
+    }
+    throw error;
+  } finally {
+    await client.end();
   }
 }
 
-function dataOriginToDb(
-  origin: DataOrigin
-): "REAL_CONTRIBUTOR" | "SYNTHETIC_SIMULATION" {
-  switch (origin) {
-    case DataOrigin.RealContributor:
-      return "REAL_CONTRIBUTOR";
-    case DataOrigin.SyntheticSimulation:
-      return "SYNTHETIC_SIMULATION";
-  }
-}
+async function verifyCommittedSeed(connectionString: string): Promise<void> {
+  // Use a second physical connection so verification cannot observe uncommitted
+  // state from the writer connection.
+  const client = new Client({ connectionString });
+  await client.connect();
 
-function exclusionStatusToDb(status: ExclusionStatus): "INCLUDED" | "EXCLUDED" {
-  switch (status) {
-    case ExclusionStatus.Included:
-      return "INCLUDED";
-    case ExclusionStatus.Excluded:
-      return "EXCLUDED";
-  }
-}
+  try {
+    const counts = await client.query<{
+      protocol_count: number;
+      contributor_count: number;
+    }>(
+      `
+        SELECT
+          (SELECT COUNT(*)::int FROM "protocols") AS protocol_count,
+          (SELECT COUNT(*)::int FROM "contributors") AS contributor_count
+      `
+    );
 
-function exclusionReasonToDb(
-  reason: ExclusionReason
-): "ADHERENCE_BELOW_THRESHOLD" | "SYNTHETIC_DATA" | "MANUAL_FLAG" | "INCOMPLETE_RECORD" {
-  switch (reason) {
-    case ExclusionReason.AdherenceBelowThreshold:
-      return "ADHERENCE_BELOW_THRESHOLD";
-    case ExclusionReason.SyntheticData:
-      return "SYNTHETIC_DATA";
-    case ExclusionReason.ManualFlag:
-      return "MANUAL_FLAG";
-    case ExclusionReason.IncompleteRecord:
-      return "INCOMPLETE_RECORD";
+    const canonicalProtocol = await client.query<{ protocol_id: string }>(
+      'SELECT "protocol_id" FROM "protocols" WHERE "protocol_id" = $1',
+      ["protocol-001"]
+    );
+
+    const protocolCount = counts.rows[0]?.protocol_count ?? -1;
+    const contributorCount = counts.rows[0]?.contributor_count ?? -1;
+    const expectedProtocolCount = getAllProtocols().length;
+    const expectedContributorCount = getAllContributorRecords().length;
+
+    if (
+      protocolCount !== expectedProtocolCount ||
+      contributorCount !== expectedContributorCount ||
+      canonicalProtocol.rowCount !== 1
+    ) {
+      throw new Error(
+        [
+          "Committed seed verification failed.",
+          `protocol rows=${protocolCount}/${expectedProtocolCount}`,
+          `contributor rows=${contributorCount}/${expectedContributorCount}`,
+          `protocol-001=${canonicalProtocol.rowCount === 1 ? "present" : "missing"}`,
+        ].join(" ")
+      );
+    }
+
+    // eslint-disable-next-line no-console
+    console.log(
+      `Committed seed verification passed: ${protocolCount} protocols and ${contributorCount} contributor records persisted.`
+    );
+  } finally {
+    await client.end();
   }
 }
 
 async function main(): Promise<void> {
-  const prisma = new PrismaClient();
-
-  const protocols = getAllProtocols();
-  const contributorRecords = getAllContributorRecords();
-
-  await prisma.$transaction(async (tx) => {
-    // Clear existing rows to keep seed idempotent.
-    await tx.outcomeLog.deleteMany();
-    await tx.challenge.deleteMany();
-    await tx.contributor.deleteMany();
-    await tx.blend.deleteMany();
-    await tx.protocol.deleteMany();
-
-    for (const protocol of protocols) {
-      await tx.protocol.upsert({
-        where: { protocolId: protocol.protocolId },
-        update: {
-          version: protocol.version,
-          userProfileId: protocol.userProfileId,
-          goal: protocol.goal,
-          durationDays: protocol.durationDays,
-          status: protocolStatusToDb(protocol.status),
-          phases: protocol.phases,
-          challengeIds: protocol.challengeIds,
-          createdAt: new Date(protocol.createdAt),
-        },
-        create: {
-          protocolId: protocol.protocolId,
-          version: protocol.version,
-          userProfileId: protocol.userProfileId,
-          goal: protocol.goal,
-          durationDays: protocol.durationDays,
-          status: protocolStatusToDb(protocol.status),
-          phases: protocol.phases,
-          challengeIds: protocol.challengeIds,
-          createdAt: new Date(protocol.createdAt),
-        },
-      });
-    }
-
-    for (const record of contributorRecords) {
-      await tx.contributor.upsert({
-        where: { recordId: record.recordId },
-        update: {
-          userId: record.userId,
-          protocolId: record.protocolId,
-          dataOrigin: dataOriginToDb(record.dataOrigin),
-          exclusionStatus: exclusionStatusToDb(record.exclusionStatus),
-          exclusionReason: record.exclusionReason
-            ? exclusionReasonToDb(record.exclusionReason)
-            : null,
-          adherenceScore: record.adherenceScore,
-          challengeCompletionRate: record.challengeCompletionRate,
-          outcomeNotes: record.outcomeNotes ?? null,
-          recordedAt: new Date(record.recordedAt),
-        },
-        create: {
-          recordId: record.recordId,
-          userId: record.userId,
-          protocolId: record.protocolId,
-          dataOrigin: dataOriginToDb(record.dataOrigin),
-          exclusionStatus: exclusionStatusToDb(record.exclusionStatus),
-          exclusionReason: record.exclusionReason
-            ? exclusionReasonToDb(record.exclusionReason)
-            : null,
-          adherenceScore: record.adherenceScore,
-          challengeCompletionRate: record.challengeCompletionRate,
-          outcomeNotes: record.outcomeNotes ?? null,
-          recordedAt: new Date(record.recordedAt),
-        },
-      });
-    }
-  });
-
-  await prisma.$disconnect();
+  const connectionString = requireConnectionString();
+  await seedDatabase(connectionString);
+  await verifyCommittedSeed(connectionString);
 }
 
-main().catch((err: unknown) => {
+main().catch((error: unknown) => {
   // eslint-disable-next-line no-console
-  console.error("Prisma seed failed:", err);
-  process.exitCode = 1;
+  console.error("PostgreSQL seed failed:", error);
+  process.exit(1);
 });

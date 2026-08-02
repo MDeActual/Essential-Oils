@@ -169,40 +169,52 @@ export function runAnalyticsPipeline(
 // ---------------------------------------------------------------------------
 
 /**
- * Groups analytics-eligible contributor records by their protocolId and
- * produces a per-protocol cohort segment for each distinct protocol.
+ * Groups analytics-eligible contributor records by protocolId and produces a
+ * per-protocol cohort segment for each protocol with at least one eligible
+ * record. Excluded real-contributor records are attributed to the matching
+ * protocol segment so detail metrics preserve exclusion counts and reasons.
  *
  * MOAT NOTICE (M-004): This function produces structural per-protocol
  * aggregations only. Protocol ranking, scoring, and evolution signal
  * extraction are moat-protected and must not be added here.
  *
  * @param eligible - Records that have already passed the eligibility filter.
- * @param excluded - Records that did not pass the eligibility filter (used for
- *                   the global exclusion total; not broken down per-protocol).
- * @returns An array of ProtocolCohortSegment entries, one per distinct protocolId.
+ * @param excluded - Records that did not pass the eligibility filter.
+ * @returns An array of ProtocolCohortSegment entries, one per protocol with an
+ *          eligible cohort.
  */
 export function segmentByProtocol(
   eligible: ContributorRecord[],
   excluded: ContributorRecord[]
 ): ProtocolCohortSegment[] {
-  // Group eligible records by protocolId.
-  const protocolMap = new Map<string, ContributorRecord[]>();
+  const eligibleByProtocol = new Map<string, ContributorRecord[]>();
   for (const record of eligible) {
-    const existing = protocolMap.get(record.protocolId);
+    const existing = eligibleByProtocol.get(record.protocolId);
     if (existing) {
       existing.push(record);
     } else {
-      protocolMap.set(record.protocolId, [record]);
+      eligibleByProtocol.set(record.protocolId, [record]);
     }
   }
 
-  // Build one segment per protocol. Excluded records are not attributed to a
-  // specific protocol segment; they are captured at the report level.
+  const excludedByProtocol = new Map<string, ContributorRecord[]>();
+  for (const record of excluded) {
+    const existing = excludedByProtocol.get(record.protocolId);
+    if (existing) {
+      existing.push(record);
+    } else {
+      excludedByProtocol.set(record.protocolId, [record]);
+    }
+  }
+
   const segments: ProtocolCohortSegment[] = [];
-  for (const [protocolId, protocolRecords] of protocolMap) {
+  for (const [protocolId, protocolRecords] of eligibleByProtocol) {
     segments.push({
       protocolId,
-      metrics: aggregateCohortMetrics(protocolRecords, []),
+      metrics: aggregateCohortMetrics(
+        protocolRecords,
+        excludedByProtocol.get(protocolId) ?? []
+      ),
     });
   }
 
@@ -220,7 +232,8 @@ export function segmentByProtocol(
  * 1. Validate all records for structural correctness and LOCK-003 compliance.
  * 2. Abort with errors if any record fails validation.
  * 3. Filter records to the analytics-eligible subset.
- * 4. Group eligible records by protocolId and aggregate per-protocol metrics.
+ * 4. Group eligible records by protocolId and aggregate per-protocol metrics,
+ *    including excluded records from the same protocol.
  *
  * MOAT NOTICE (M-004): Produces structural per-protocol aggregations only.
  * Signal extraction and protocol evolution recommendations are moat-protected.
