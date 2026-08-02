@@ -1,10 +1,13 @@
 name: Apply Enum Storage Alignment
 
-# Second push intentionally triggers this branch-only transformation after registration.
+# Temporary branch transformer. It deletes itself before committing the repair.
 on:
   push:
     branches:
       - agent/phyto-enum-storage-repair-v1
+  pull_request:
+    branches:
+      - audit/post-pr17-readiness
 
 permissions:
   contents: write
@@ -16,6 +19,8 @@ jobs:
     steps:
       - name: Check out repair branch
         uses: actions/checkout@v6
+        with:
+          ref: agent/phyto-enum-storage-repair-v1
       - name: Align migration and audit sentinel with Prisma enum mappings
         run: |
           python <<'PY'
