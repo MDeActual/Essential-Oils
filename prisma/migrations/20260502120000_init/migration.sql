@@ -2,50 +2,51 @@
 -- Generated to match prisma/schema.prisma models.
 
 -- Enums
+-- Persisted labels use the lowercase values declared by Prisma @map attributes.
 DO $$ BEGIN
-  CREATE TYPE "DataOrigin" AS ENUM ('REAL_CONTRIBUTOR', 'SYNTHETIC_SIMULATION');
+  CREATE TYPE "DataOrigin" AS ENUM ('real_contributor', 'synthetic_simulation');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE "ExclusionStatus" AS ENUM ('INCLUDED', 'EXCLUDED');
+  CREATE TYPE "ExclusionStatus" AS ENUM ('included', 'excluded');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE "ExclusionReason" AS ENUM ('ADHERENCE_BELOW_THRESHOLD', 'SYNTHETIC_DATA', 'MANUAL_FLAG', 'INCOMPLETE_RECORD');
+  CREATE TYPE "ExclusionReason" AS ENUM ('adherence_below_threshold', 'synthetic_data', 'manual_flag', 'incomplete_record');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE "ProtocolStatus" AS ENUM ('DRAFT', 'ACTIVE', 'COMPLETED', 'DEPRECATED');
+  CREATE TYPE "ProtocolStatus" AS ENUM ('draft', 'active', 'completed', 'deprecated');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE "ChallengeType" AS ENUM ('ADHERENCE', 'EDUCATIONAL', 'EXPERIENTIAL');
+  CREATE TYPE "ChallengeType" AS ENUM ('adherence', 'educational', 'experiential');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE "ChallengeCompletionStatus" AS ENUM ('PENDING', 'COMPLETED', 'SKIPPED');
+  CREATE TYPE "ChallengeCompletionStatus" AS ENUM ('pending', 'completed', 'skipped');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE "BlendSafetyStatus" AS ENUM ('VALIDATED', 'PENDING', 'REJECTED');
+  CREATE TYPE "BlendSafetyStatus" AS ENUM ('validated', 'pending', 'rejected');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE "ApplicationMethod" AS ENUM ('TOPICAL', 'AROMATIC', 'INTERNAL');
+  CREATE TYPE "ApplicationMethod" AS ENUM ('topical', 'aromatic', 'internal');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
@@ -80,7 +81,7 @@ CREATE TABLE IF NOT EXISTS "protocols" (
   "user_profile_id" TEXT NOT NULL,
   "goal" TEXT NOT NULL,
   "duration_days" INTEGER NOT NULL,
-  "status" "ProtocolStatus" NOT NULL DEFAULT 'DRAFT',
+  "status" "ProtocolStatus" NOT NULL DEFAULT 'draft',
   "phases" JSONB NOT NULL,
   "challenge_ids" TEXT[] NOT NULL,
   "created_at" TIMESTAMP(3) NOT NULL,
@@ -101,7 +102,7 @@ CREATE TABLE IF NOT EXISTS "challenges" (
   "type" "ChallengeType" NOT NULL,
   "prompt" TEXT NOT NULL,
   "due_day" INTEGER NOT NULL,
-  "completion_status" "ChallengeCompletionStatus" NOT NULL DEFAULT 'PENDING',
+  "completion_status" "ChallengeCompletionStatus" NOT NULL DEFAULT 'pending',
   "response" TEXT,
   "created_at" TIMESTAMP(3) NOT NULL,
   "updated_at" TIMESTAMP(3) NOT NULL,
