@@ -1,5 +1,6 @@
 name: Generate Prisma Adapter Lockfile
 
+# Second push intentionally triggers this branch-only generator after GitHub registers it.
 on:
   push:
     branches:
