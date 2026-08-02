@@ -1,5 +1,5 @@
 /**
- * errorHandler.ts — Global Error Handling Middleware
+ * errorHandler.ts — Protocol Endpoint Controllers
  *
  * Catches any errors propagated via next(err) in Express route handlers and
  * returns a consistent ApiErrorResponse envelope. No internal stack traces are
@@ -60,7 +60,11 @@ export function errorHandler(
     return;
   }
 
-  // Unexpected / unhandled error — do not leak internal details.
+  // Diagnostic branch only: expose the underlying exception in CI logs while
+  // preserving the public response envelope. This change will never be merged.
+  // eslint-disable-next-line no-console
+  console.error("Unhandled API error:", err);
+
   const body: ApiErrorResponse = {
     success: false,
     error: { code: "INTERNAL_ERROR", message: "An unexpected error occurred." },
