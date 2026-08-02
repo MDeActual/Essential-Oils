@@ -158,8 +158,3 @@ ALTER TABLE "outcome_logs"
   ADD CONSTRAINT "outcome_logs_contributor_id_fkey"
   FOREIGN KEY ("contributor_id") REFERENCES "contributors"("record_id")
   ON DELETE RESTRICT ON UPDATE CASCADE;
-
-ALTER TABLE "outcome_logs"
-  ADD CONSTRAINT "outcome_logs_protocol_id_fkey"
-  FOREIGN KEY ("protocol_id") REFERENCES "protocols"("protocol_id")
-  ON DELETE RESTRICT ON UPDATE CASCADE;
