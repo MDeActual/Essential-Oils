@@ -48,12 +48,30 @@ jobs:
           npm audit --omit=dev --json > /tmp/npm-audit-production.json || true
           node <<'NODE'
           const fs = require('node:fs');
-          function read(file) {
-            const report = JSON.parse(fs.readFileSync(file, 'utf8'));
-            return report.metadata?.vulnerabilities ?? {};
+          function report(file) {
+            return JSON.parse(fs.readFileSync(file, 'utf8'));
           }
-          console.log('All dependencies:', read('/tmp/npm-audit-all.json'));
-          console.log('Production dependencies:', read('/tmp/npm-audit-production.json'));
+          function viaSummary(via) {
+            return (via ?? []).map((entry) =>
+              typeof entry === 'string'
+                ? entry
+                : `${entry.source ?? 'advisory'}:${entry.title ?? entry.name ?? 'unknown'} (${entry.severity ?? 'unknown'})`
+            );
+          }
+          const all = report('/tmp/npm-audit-all.json');
+          const production = report('/tmp/npm-audit-production.json');
+          console.log('All dependencies:', all.metadata?.vulnerabilities ?? {});
+          console.log('Production dependencies:', production.metadata?.vulnerabilities ?? {});
+          for (const [name, finding] of Object.entries(production.vulnerabilities ?? {})) {
+            console.log(JSON.stringify({
+              name,
+              severity: finding.severity,
+              direct: finding.isDirect,
+              range: finding.range,
+              via: viaSummary(finding.via),
+              fixAvailable: finding.fixAvailable
+            }));
+          }
           NODE
       - name: Upload dependency audit evidence
         if: always()
