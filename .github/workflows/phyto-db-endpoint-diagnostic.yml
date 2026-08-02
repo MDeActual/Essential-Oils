@@ -1,5 +1,6 @@
 name: Phyto DB Endpoint Diagnostic
 
+# Second push intentionally triggers this branch-only diagnostic after GitHub registers the workflow.
 on:
   push:
     branches:
