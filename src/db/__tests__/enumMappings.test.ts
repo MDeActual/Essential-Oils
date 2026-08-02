@@ -27,21 +27,21 @@ import {
 } from "../mappers";
 
 describe("Prisma mapped enum contracts", () => {
-  it("uses mapped database values for generated Prisma enums", () => {
-    expect($Enums.DataOrigin.REAL_CONTRIBUTOR).toBe("real_contributor");
-    expect($Enums.DataOrigin.SYNTHETIC_SIMULATION).toBe("synthetic_simulation");
-    expect($Enums.ExclusionStatus.INCLUDED).toBe("included");
-    expect($Enums.ExclusionStatus.EXCLUDED).toBe("excluded");
+  it("uses generated Prisma enum constants at the client boundary", () => {
+    expect($Enums.DataOrigin.REAL_CONTRIBUTOR).toBe("REAL_CONTRIBUTOR");
+    expect($Enums.DataOrigin.SYNTHETIC_SIMULATION).toBe("SYNTHETIC_SIMULATION");
+    expect($Enums.ExclusionStatus.INCLUDED).toBe("INCLUDED");
+    expect($Enums.ExclusionStatus.EXCLUDED).toBe("EXCLUDED");
     expect($Enums.ExclusionReason.ADHERENCE_BELOW_THRESHOLD).toBe(
-      "adherence_below_threshold"
+      "ADHERENCE_BELOW_THRESHOLD"
     );
-    expect($Enums.ExclusionReason.SYNTHETIC_DATA).toBe("synthetic_data");
-    expect($Enums.ProtocolStatus.DRAFT).toBe("draft");
-    expect($Enums.ProtocolStatus.ACTIVE).toBe("active");
-    expect($Enums.ChallengeType.ADHERENCE).toBe("adherence");
-    expect($Enums.ChallengeCompletionStatus.PENDING).toBe("pending");
-    expect($Enums.ApplicationMethod.TOPICAL).toBe("topical");
-    expect($Enums.BlendSafetyStatus.VALIDATED).toBe("validated");
+    expect($Enums.ExclusionReason.SYNTHETIC_DATA).toBe("SYNTHETIC_DATA");
+    expect($Enums.ProtocolStatus.DRAFT).toBe("DRAFT");
+    expect($Enums.ProtocolStatus.ACTIVE).toBe("ACTIVE");
+    expect($Enums.ChallengeType.ADHERENCE).toBe("ADHERENCE");
+    expect($Enums.ChallengeCompletionStatus.PENDING).toBe("PENDING");
+    expect($Enums.ApplicationMethod.TOPICAL).toBe("TOPICAL");
+    expect($Enums.BlendSafetyStatus.VALIDATED).toBe("VALIDATED");
   });
 
   it("round-trips analytics enums", () => {
