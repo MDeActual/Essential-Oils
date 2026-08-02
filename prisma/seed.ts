@@ -1,62 +1,15 @@
 import "dotenv/config";
 
 import { getPrismaClient } from "../src/db/client";
-
-import { ProtocolStatus } from "../src/protocol/types";
-import { DataOrigin, ExclusionReason, ExclusionStatus } from "../src/analytics/types";
+import {
+  domainDataOriginToPrisma,
+  domainExclusionReasonToPrisma,
+  domainExclusionStatusToPrisma,
+  domainProtocolStatusToPrisma,
+} from "../src/db/mappers";
 
 import { getAllProtocols } from "../src/api/controllers/protocolStore";
 import { getAllContributorRecords } from "../src/api/controllers/analyticsStore";
-
-function protocolStatusToDb(
-  status: ProtocolStatus
-): "DRAFT" | "ACTIVE" | "COMPLETED" | "DEPRECATED" {
-  switch (status) {
-    case ProtocolStatus.Draft:
-      return "DRAFT";
-    case ProtocolStatus.Active:
-      return "ACTIVE";
-    case ProtocolStatus.Completed:
-      return "COMPLETED";
-    case ProtocolStatus.Deprecated:
-      return "DEPRECATED";
-  }
-}
-
-function dataOriginToDb(
-  origin: DataOrigin
-): "REAL_CONTRIBUTOR" | "SYNTHETIC_SIMULATION" {
-  switch (origin) {
-    case DataOrigin.RealContributor:
-      return "REAL_CONTRIBUTOR";
-    case DataOrigin.SyntheticSimulation:
-      return "SYNTHETIC_SIMULATION";
-  }
-}
-
-function exclusionStatusToDb(status: ExclusionStatus): "INCLUDED" | "EXCLUDED" {
-  switch (status) {
-    case ExclusionStatus.Included:
-      return "INCLUDED";
-    case ExclusionStatus.Excluded:
-      return "EXCLUDED";
-  }
-}
-
-function exclusionReasonToDb(
-  reason: ExclusionReason
-): "ADHERENCE_BELOW_THRESHOLD" | "SYNTHETIC_DATA" | "MANUAL_FLAG" | "INCOMPLETE_RECORD" {
-  switch (reason) {
-    case ExclusionReason.AdherenceBelowThreshold:
-      return "ADHERENCE_BELOW_THRESHOLD";
-    case ExclusionReason.SyntheticData:
-      return "SYNTHETIC_DATA";
-    case ExclusionReason.ManualFlag:
-      return "MANUAL_FLAG";
-    case ExclusionReason.IncompleteRecord:
-      return "INCOMPLETE_RECORD";
-  }
-}
 
 async function main(): Promise<void> {
   const prisma = getPrismaClient();
@@ -73,6 +26,8 @@ async function main(): Promise<void> {
     await tx.protocol.deleteMany();
 
     for (const protocol of protocols) {
+      const status = domainProtocolStatusToPrisma(protocol.status);
+
       await tx.protocol.upsert({
         where: { protocolId: protocol.protocolId },
         update: {
@@ -80,7 +35,7 @@ async function main(): Promise<void> {
           userProfileId: protocol.userProfileId,
           goal: protocol.goal,
           durationDays: protocol.durationDays,
-          status: protocolStatusToDb(protocol.status),
+          status,
           phases: protocol.phases,
           challengeIds: protocol.challengeIds,
           createdAt: new Date(protocol.createdAt),
@@ -91,7 +46,7 @@ async function main(): Promise<void> {
           userProfileId: protocol.userProfileId,
           goal: protocol.goal,
           durationDays: protocol.durationDays,
-          status: protocolStatusToDb(protocol.status),
+          status,
           phases: protocol.phases,
           challengeIds: protocol.challengeIds,
           createdAt: new Date(protocol.createdAt),
@@ -100,16 +55,18 @@ async function main(): Promise<void> {
     }
 
     for (const record of contributorRecords) {
+      const dataOrigin = domainDataOriginToPrisma(record.dataOrigin);
+      const exclusionStatus = domainExclusionStatusToPrisma(record.exclusionStatus);
+      const exclusionReason = domainExclusionReasonToPrisma(record.exclusionReason);
+
       await tx.contributor.upsert({
         where: { recordId: record.recordId },
         update: {
           userId: record.userId,
           protocolId: record.protocolId,
-          dataOrigin: dataOriginToDb(record.dataOrigin),
-          exclusionStatus: exclusionStatusToDb(record.exclusionStatus),
-          exclusionReason: record.exclusionReason
-            ? exclusionReasonToDb(record.exclusionReason)
-            : null,
+          dataOrigin,
+          exclusionStatus,
+          exclusionReason,
           adherenceScore: record.adherenceScore,
           challengeCompletionRate: record.challengeCompletionRate,
           outcomeNotes: record.outcomeNotes ?? null,
@@ -119,11 +76,9 @@ async function main(): Promise<void> {
           recordId: record.recordId,
           userId: record.userId,
           protocolId: record.protocolId,
-          dataOrigin: dataOriginToDb(record.dataOrigin),
-          exclusionStatus: exclusionStatusToDb(record.exclusionStatus),
-          exclusionReason: record.exclusionReason
-            ? exclusionReasonToDb(record.exclusionReason)
-            : null,
+          dataOrigin,
+          exclusionStatus,
+          exclusionReason,
           adherenceScore: record.adherenceScore,
           challengeCompletionRate: record.challengeCompletionRate,
           outcomeNotes: record.outcomeNotes ?? null,
