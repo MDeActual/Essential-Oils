@@ -3,49 +3,49 @@
 
 -- Enums
 DO $$ BEGIN
-  CREATE TYPE "DataOrigin" AS ENUM ('REAL_CONTRIBUTOR', 'SYNTHETIC_SIMULATION');
+  CREATE TYPE "DataOrigin" AS ENUM ('real_contributor', 'synthetic_simulation');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE "ExclusionStatus" AS ENUM ('INCLUDED', 'EXCLUDED');
+  CREATE TYPE "ExclusionStatus" AS ENUM ('included', 'excluded');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE "ExclusionReason" AS ENUM ('ADHERENCE_BELOW_THRESHOLD', 'SYNTHETIC_DATA', 'MANUAL_FLAG', 'INCOMPLETE_RECORD');
+  CREATE TYPE "ExclusionReason" AS ENUM ('adherence_below_threshold', 'synthetic_data', 'manual_flag', 'incomplete_record');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE "ProtocolStatus" AS ENUM ('DRAFT', 'ACTIVE', 'COMPLETED', 'DEPRECATED');
+  CREATE TYPE "ProtocolStatus" AS ENUM ('draft', 'active', 'completed', 'deprecated');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE "ChallengeType" AS ENUM ('ADHERENCE', 'EDUCATIONAL', 'EXPERIENTIAL');
+  CREATE TYPE "ChallengeType" AS ENUM ('adherence', 'educational', 'experiential');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE "ChallengeCompletionStatus" AS ENUM ('PENDING', 'COMPLETED', 'SKIPPED');
+  CREATE TYPE "ChallengeCompletionStatus" AS ENUM ('pending', 'completed', 'skipped');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE "BlendSafetyStatus" AS ENUM ('VALIDATED', 'PENDING', 'REJECTED');
+  CREATE TYPE "BlendSafetyStatus" AS ENUM ('validated', 'pending', 'rejected');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE "ApplicationMethod" AS ENUM ('TOPICAL', 'AROMATIC', 'INTERNAL');
+  CREATE TYPE "ApplicationMethod" AS ENUM ('topical', 'aromatic', 'internal');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS "protocols" (
   "user_profile_id" TEXT NOT NULL,
   "goal" TEXT NOT NULL,
   "duration_days" INTEGER NOT NULL,
-  "status" "ProtocolStatus" NOT NULL DEFAULT 'DRAFT',
+  "status" "ProtocolStatus" NOT NULL DEFAULT 'draft',
   "phases" JSONB NOT NULL,
   "challenge_ids" TEXT[] NOT NULL,
   "created_at" TIMESTAMP(3) NOT NULL,
@@ -101,9 +101,9 @@ CREATE TABLE IF NOT EXISTS "challenges" (
   "type" "ChallengeType" NOT NULL,
   "prompt" TEXT NOT NULL,
   "due_day" INTEGER NOT NULL,
-  "completion_status" "ChallengeCompletionStatus" NOT NULL DEFAULT 'PENDING',
+  "completion_status" "ChallengeCompletionStatus" NOT NULL DEFAULT 'pending',
   "response" TEXT,
-  "created_at" TIMESTAMP(3) NOT NULL,
+  "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updated_at" TIMESTAMP(3) NOT NULL,
 
   CONSTRAINT "challenges_pkey" PRIMARY KEY ("id")
@@ -111,7 +111,7 @@ CREATE TABLE IF NOT EXISTS "challenges" (
 
 CREATE UNIQUE INDEX IF NOT EXISTS "challenges_challenge_id_key" ON "challenges"("challenge_id");
 CREATE INDEX IF NOT EXISTS "challenges_protocol_id_idx" ON "challenges"("protocol_id");
-CREATE INDEX IF NOT EXISTS "challenges_type_idx" ON "challenges"("type");
+CREATE INDEX IF NOT EXISTS "challenges_completion_status_idx" ON "challenges"("completion_status");
 
 -- This is the initial migration. PostgreSQL does not support
 -- ALTER TABLE ... ADD CONSTRAINT IF NOT EXISTS, so these constraints are
@@ -128,9 +128,10 @@ CREATE TABLE IF NOT EXISTS "blends" (
   "synergy_score" DOUBLE PRECISION NOT NULL,
   "application_method" "ApplicationMethod" NOT NULL,
   "intended_effect" TEXT NOT NULL,
-  "safety_status" "BlendSafetyStatus" NOT NULL,
+  "safety_status" "BlendSafetyStatus" NOT NULL DEFAULT 'pending',
   "created_at" TIMESTAMP(3) NOT NULL,
   "last_reviewed_at" TIMESTAMP(3) NOT NULL,
+  "db_created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updated_at" TIMESTAMP(3) NOT NULL,
 
   CONSTRAINT "blends_pkey" PRIMARY KEY ("id")
