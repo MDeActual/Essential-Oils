@@ -113,8 +113,11 @@ CREATE UNIQUE INDEX IF NOT EXISTS "challenges_challenge_id_key" ON "challenges"(
 CREATE INDEX IF NOT EXISTS "challenges_protocol_id_idx" ON "challenges"("protocol_id");
 CREATE INDEX IF NOT EXISTS "challenges_type_idx" ON "challenges"("type");
 
+-- This is the initial migration. PostgreSQL does not support
+-- ALTER TABLE ... ADD CONSTRAINT IF NOT EXISTS, so these constraints are
+-- declared normally and Prisma records the migration after a successful apply.
 ALTER TABLE "challenges"
-  ADD CONSTRAINT IF NOT EXISTS "challenges_protocol_id_fkey"
+  ADD CONSTRAINT "challenges_protocol_id_fkey"
   FOREIGN KEY ("protocol_id") REFERENCES "protocols"("protocol_id")
   ON DELETE RESTRICT ON UPDATE CASCADE;
 
@@ -151,11 +154,11 @@ CREATE INDEX IF NOT EXISTS "outcome_logs_contributor_id_idx" ON "outcome_logs"("
 CREATE INDEX IF NOT EXISTS "outcome_logs_protocol_id_idx" ON "outcome_logs"("protocol_id");
 
 ALTER TABLE "outcome_logs"
-  ADD CONSTRAINT IF NOT EXISTS "outcome_logs_contributor_id_fkey"
+  ADD CONSTRAINT "outcome_logs_contributor_id_fkey"
   FOREIGN KEY ("contributor_id") REFERENCES "contributors"("record_id")
   ON DELETE RESTRICT ON UPDATE CASCADE;
 
 ALTER TABLE "outcome_logs"
-  ADD CONSTRAINT IF NOT EXISTS "outcome_logs_protocol_id_fkey"
+  ADD CONSTRAINT "outcome_logs_protocol_id_fkey"
   FOREIGN KEY ("protocol_id") REFERENCES "protocols"("protocol_id")
   ON DELETE RESTRICT ON UPDATE CASCADE;
