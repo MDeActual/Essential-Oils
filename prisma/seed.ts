@@ -1,6 +1,6 @@
 import "dotenv/config";
 
-import { PrismaClient } from "../src/generated/prisma";
+import { getPrismaClient } from "../src/db/client";
 
 import { ProtocolStatus } from "../src/protocol/types";
 import { DataOrigin, ExclusionReason, ExclusionStatus } from "../src/analytics/types";
@@ -59,7 +59,7 @@ function exclusionReasonToDb(
 }
 
 async function main(): Promise<void> {
-  const prisma = new PrismaClient();
+  const prisma = getPrismaClient();
 
   const protocols = getAllProtocols();
   const contributorRecords = getAllContributorRecords();
