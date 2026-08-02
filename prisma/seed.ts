@@ -2,12 +2,6 @@ import "dotenv/config";
 
 import { Client } from "pg";
 
-import {
-  domainDataOriginToPrisma,
-  domainExclusionReasonToPrisma,
-  domainExclusionStatusToPrisma,
-  domainProtocolStatusToPrisma,
-} from "../src/db/mappers";
 import { getAllProtocols } from "../src/api/controllers/protocolStore";
 import { getAllContributorRecords } from "../src/api/controllers/analyticsStore";
 
@@ -78,7 +72,7 @@ async function seedDatabase(connectionString: string): Promise<void> {
           protocol.userProfileId,
           protocol.goal,
           protocol.durationDays,
-          domainProtocolStatusToPrisma(protocol.status),
+          protocol.status,
           JSON.stringify(protocol.phases),
           [...protocol.challengeIds],
           new Date(protocol.createdAt),
@@ -123,9 +117,9 @@ async function seedDatabase(connectionString: string): Promise<void> {
           record.recordId,
           record.userId,
           record.protocolId,
-          domainDataOriginToPrisma(record.dataOrigin),
-          domainExclusionStatusToPrisma(record.exclusionStatus),
-          domainExclusionReasonToPrisma(record.exclusionReason),
+          record.dataOrigin,
+          record.exclusionStatus,
+          record.exclusionReason ?? null,
           record.adherenceScore,
           record.challengeCompletionRate,
           record.outcomeNotes ?? null,
