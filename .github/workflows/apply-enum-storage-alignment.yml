@@ -1,0 +1,73 @@
+name: Apply Enum Storage Alignment
+
+on:
+  push:
+    branches:
+      - agent/phyto-enum-storage-repair-v1
+
+permissions:
+  contents: write
+
+jobs:
+  align:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repair branch
+        uses: actions/checkout@v6
+      - name: Align migration and audit sentinel with Prisma enum mappings
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          replacements = {
+              Path('prisma/migrations/20260502120000_init/migration.sql'): [
+                  ('CREATE TYPE "DataOrigin" AS ENUM (\'REAL_CONTRIBUTOR\', \'SYNTHETIC_SIMULATION\');',
+                   'CREATE TYPE "DataOrigin" AS ENUM (\'real_contributor\', \'synthetic_simulation\');'),
+                  ('CREATE TYPE "ExclusionStatus" AS ENUM (\'INCLUDED\', \'EXCLUDED\');',
+                   'CREATE TYPE "ExclusionStatus" AS ENUM (\'included\', \'excluded\');'),
+                  ('CREATE TYPE "ExclusionReason" AS ENUM (\'ADHERENCE_BELOW_THRESHOLD\', \'SYNTHETIC_DATA\', \'MANUAL_FLAG\', \'INCOMPLETE_RECORD\');',
+                   'CREATE TYPE "ExclusionReason" AS ENUM (\'adherence_below_threshold\', \'synthetic_data\', \'manual_flag\', \'incomplete_record\');'),
+                  ('CREATE TYPE "ProtocolStatus" AS ENUM (\'DRAFT\', \'ACTIVE\', \'COMPLETED\', \'DEPRECATED\');',
+                   'CREATE TYPE "ProtocolStatus" AS ENUM (\'draft\', \'active\', \'completed\', \'deprecated\');'),
+                  ('CREATE TYPE "ChallengeType" AS ENUM (\'ADHERENCE\', \'EDUCATIONAL\', \'EXPERIENTIAL\');',
+                   'CREATE TYPE "ChallengeType" AS ENUM (\'adherence\', \'educational\', \'experiential\');'),
+                  ('CREATE TYPE "ChallengeCompletionStatus" AS ENUM (\'PENDING\', \'COMPLETED\', \'SKIPPED\');',
+                   'CREATE TYPE "ChallengeCompletionStatus" AS ENUM (\'pending\', \'completed\', \'skipped\');'),
+                  ('CREATE TYPE "BlendSafetyStatus" AS ENUM (\'VALIDATED\', \'PENDING\', \'REJECTED\');',
+                   'CREATE TYPE "BlendSafetyStatus" AS ENUM (\'validated\', \'pending\', \'rejected\');'),
+                  ('CREATE TYPE "ApplicationMethod" AS ENUM (\'TOPICAL\', \'AROMATIC\', \'INTERNAL\');',
+                   'CREATE TYPE "ApplicationMethod" AS ENUM (\'topical\', \'aromatic\', \'internal\');'),
+                  ('DEFAULT \'DRAFT\'', 'DEFAULT \'draft\''),
+                  ('DEFAULT \'PENDING\'', 'DEFAULT \'pending\''),
+              ],
+              Path('.github/workflows/post-pr17-audit.yml'): [
+                  ("            'SYNTHETIC_SIMULATION',", "            'synthetic_simulation',"),
+                  ("            'EXCLUDED',", "            'excluded',"),
+                  ("            'SYNTHETIC_DATA',", "            'synthetic_data',"),
+              ],
+          }
+
+          for path, changes in replacements.items():
+              text = path.read_text()
+              for old, new in changes:
+                  count = text.count(old)
+                  if count != 1:
+                      raise SystemExit(f'{path}: expected exactly one occurrence of {old!r}, found {count}')
+                  text = text.replace(old, new)
+              path.write_text(text)
+
+          Path('.github/workflows/apply-enum-storage-alignment.yml').unlink()
+          PY
+      - name: Verify intended net files
+        run: |
+          changed="$(git status --short | awk '{print $2}' | sort)"
+          expected="$(printf '%s\n' '.github/workflows/apply-enum-storage-alignment.yml' '.github/workflows/post-pr17-audit.yml' 'prisma/migrations/20260502120000_init/migration.sql' | sort)"
+          test "$changed" = "$expected"
+      - name: Commit aligned enum storage contract
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix(db): align PostgreSQL enum labels with Prisma mappings'
+          git push origin HEAD:agent/phyto-enum-storage-repair-v1
