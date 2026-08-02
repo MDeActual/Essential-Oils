@@ -1,10 +1,12 @@
 name: Phyto DB Endpoint Diagnostic
 
-# Second push intentionally triggers this branch-only diagnostic after GitHub registers the workflow.
 on:
   push:
     branches:
       - agent/phyto-db-endpoint-diagnostic-v1
+  pull_request:
+    branches:
+      - audit/post-pr17-readiness
 
 permissions:
   contents: read
