@@ -1,4 +1,4 @@
-name: Post-PR17 Production Readiness Audit
+name: Phyto Production Readiness Audit
 
 on:
   workflow_dispatch:
@@ -11,22 +11,68 @@ on:
       - 'package-lock.json'
       - 'prisma.config.ts'
       - 'devos_execution_plan.md'
+      - 'devos/runbooks/devos_execution_plan.md'
       - '.github/workflows/post-pr17-audit.yml'
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: phyto-readiness-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-test-no-db:
-    name: Build, test, and no-DB API smoke test
+    name: Build, test, dependency evidence, and no-DB API smoke test
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Capture dependency audit evidence
+        id: dependency-audit
+        run: |
+          npm audit --json > /tmp/npm-audit-all.json || true
+          npm audit --omit=dev --json > /tmp/npm-audit-production.json || true
+          node <<'NODE'
+          const fs = require('node:fs');
+          function read(file) {
+            const report = JSON.parse(fs.readFileSync(file, 'utf8'));
+            return report.metadata?.vulnerabilities ?? {};
+          }
+          const all = read('/tmp/npm-audit-all.json');
+          const production = read('/tmp/npm-audit-production.json');
+          console.log('All dependencies:', all);
+          console.log('Production dependencies:', production);
+          const high = Number(production.high ?? 0);
+          const critical = Number(production.critical ?? 0);
+          if (high > 0 || critical > 0) {
+            console.error(`Production dependency audit contains ${high} high and ${critical} critical vulnerabilities.`);
+            process.exitCode = 1;
+          }
+          NODE
+      - name: Upload dependency audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-evidence
+          path: |
+            /tmp/npm-audit-all.json
+            /tmp/npm-audit-production.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Build
         run: npm run build
       - name: Test
@@ -38,24 +84,32 @@ jobs:
           unset DATABASE_URL
           npm start > /tmp/phyto-no-db.log 2>&1 &
           echo $! > /tmp/phyto-no-db.pid
+          ready=false
           for i in {1..30}; do
-            if curl --fail --silent http://127.0.0.1:3000/health > /tmp/health.json; then break; fi
+            if curl --fail --silent http://127.0.0.1:3000/health > /tmp/health.json; then
+              ready=true
+              break
+            fi
             sleep 1
           done
+          test "$ready" = true
       - name: Verify no-DB endpoints
         run: |
           curl --fail --silent http://127.0.0.1:3000/health
           curl --fail --silent http://127.0.0.1:3000/protocols
+          curl --fail --silent http://127.0.0.1:3000/protocols/protocol-001
           curl --fail --silent http://127.0.0.1:3000/analytics/protocols
+          curl --fail --silent http://127.0.0.1:3000/analytics/protocols/protocol-001
       - name: Stop no-DB API
         if: always()
         run: |
-          if [ -f /tmp/phyto-no-db.pid ]; then kill $(cat /tmp/phyto-no-db.pid) || true; fi
+          if [ -f /tmp/phyto-no-db.pid ]; then kill "$(cat /tmp/phyto-no-db.pid)" || true; fi
           cat /tmp/phyto-no-db.log || true
 
   postgres-migration-seed-api:
     name: PostgreSQL migration, seed, and DB-backed API smoke test
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     services:
       postgres:
         image: postgres:16
@@ -73,8 +127,12 @@ jobs:
     env:
       DATABASE_URL: postgresql://phyto:phyto@127.0.0.1:5432/phyto_audit?schema=public
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: npm
@@ -82,11 +140,10 @@ jobs:
         run: npm ci
       - name: Prisma validate
         run: npx prisma validate
-      - name: Prisma migration status
-        run: npx prisma migrate status
-        continue-on-error: true
-      - name: Apply migrations
+      - name: Apply migrations to fresh disposable database
         run: npx prisma migrate deploy
+      - name: Verify migration status is clean
+        run: npx prisma migrate status
       - name: Seed disposable database
         run: npx prisma db seed
       - name: Build
@@ -95,28 +152,38 @@ jobs:
         run: |
           npm start > /tmp/phyto-db.log 2>&1 &
           echo $! > /tmp/phyto-db.pid
+          ready=false
           for i in {1..30}; do
-            if curl --fail --silent http://127.0.0.1:3000/health > /tmp/health-db.json; then break; fi
+            if curl --fail --silent http://127.0.0.1:3000/health > /tmp/health-db.json; then
+              ready=true
+              break
+            fi
             sleep 1
           done
+          test "$ready" = true
       - name: Verify DB-backed endpoints
         run: |
           curl --fail --silent http://127.0.0.1:3000/health
           curl --fail --silent http://127.0.0.1:3000/protocols
+          curl --fail --silent http://127.0.0.1:3000/protocols/protocol-001
           curl --fail --silent http://127.0.0.1:3000/analytics/protocols
+          curl --fail --silent http://127.0.0.1:3000/analytics/protocols/protocol-001
       - name: Stop DB-backed API
         if: always()
         run: |
-          if [ -f /tmp/phyto-db.pid ]; then kill $(cat /tmp/phyto-db.pid) || true; fi
+          if [ -f /tmp/phyto-db.pid ]; then kill "$(cat /tmp/phyto-db.pid)" || true; fi
           cat /tmp/phyto-db.log || true
 
   secret-scan:
     name: Secret scan
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out full history
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Scan repository for secrets
         uses: gitleaks/gitleaks-action@v2
         env:
