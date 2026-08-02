@@ -1,0 +1,45 @@
+name: Generate Prisma Adapter Lockfile
+
+on:
+  push:
+    branches:
+      - agent/phyto-prisma-adapter-repair-v1
+
+permissions:
+  contents: write
+
+jobs:
+  generate-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Regenerate lockfile from committed manifest
+        run: npm install --package-lock-only --ignore-scripts
+      - name: Verify only lockfile changed
+        run: |
+          unexpected="$(git diff --name-only | grep -v '^package-lock.json$' || true)"
+          test -z "$unexpected"
+      - name: Validate install, build, tests, and production dependencies
+        run: |
+          npm ci
+          npm run build
+          npm test -- --runInBand
+          npm audit --omit=dev --audit-level=high
+      - name: Commit validated lockfile
+        run: |
+          if git diff --quiet -- package-lock.json; then
+            echo 'Lockfile is already current.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add package-lock.json
+          git commit -m 'chore: refresh Prisma adapter lockfile'
+          git push origin HEAD:agent/phyto-prisma-adapter-repair-v1
