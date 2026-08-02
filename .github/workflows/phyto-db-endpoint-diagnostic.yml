@@ -1,0 +1,105 @@
+name: Phyto DB Endpoint Diagnostic
+
+on:
+  push:
+    branches:
+      - agent/phyto-db-endpoint-diagnostic-v1
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: phyto
+          POSTGRES_PASSWORD: phyto
+          POSTGRES_DB: phyto_audit
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U phyto -d phyto_audit"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://phyto:phyto@127.0.0.1:5432/phyto_audit?schema=public
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install, migrate, and seed
+        run: |
+          npm ci
+          npx prisma validate
+          npx prisma migrate deploy
+          npx prisma migrate status
+          npx prisma db seed
+      - name: Add synthetic sentinel
+        run: |
+          npx prisma db execute --stdin <<'SQL'
+          INSERT INTO "contributors" (
+            "id", "record_id", "user_id", "protocol_id", "data_origin",
+            "exclusion_status", "exclusion_reason", "adherence_score",
+            "challenge_completion_rate", "outcome_notes", "recorded_at",
+            "created_at", "updated_at"
+          ) VALUES (
+            'audit-synthetic-id', 'audit-synthetic-record', 'audit-synthetic-user',
+            'protocol-001', 'SYNTHETIC_SIMULATION', 'EXCLUDED', 'SYNTHETIC_DATA',
+            100, 100, 'Audit-only sentinel', CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+          );
+          SQL
+      - name: Build and start DB-backed API
+        run: |
+          npm run build
+          npm start > /tmp/phyto-db.log 2>&1 &
+          echo $! > /tmp/phyto-db.pid
+          ready=false
+          for i in {1..30}; do
+            if curl --silent --show-error --fail http://127.0.0.1:3000/health > /tmp/health.json; then
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+          test "$ready" = true
+      - name: Record endpoint statuses and bodies
+        run: |
+          failed=0
+          check_endpoint() {
+            name="$1"
+            url="$2"
+            body="/tmp/${name}.json"
+            status="$(curl --silent --show-error --output "$body" --write-out '%{http_code}' "$url" || true)"
+            echo "=== $name ==="
+            echo "URL: $url"
+            echo "HTTP: $status"
+            cat "$body" || true
+            echo
+            case "$status" in
+              2??) ;;
+              *) failed=1 ;;
+            esac
+          }
+
+          check_endpoint health http://127.0.0.1:3000/health
+          check_endpoint protocols http://127.0.0.1:3000/protocols
+          check_endpoint protocol_001 http://127.0.0.1:3000/protocols/protocol-001
+          check_endpoint analytics_protocols http://127.0.0.1:3000/analytics/protocols
+          check_endpoint analytics_protocol_001 http://127.0.0.1:3000/analytics/protocols/protocol-001
+
+          exit "$failed"
+      - name: Print API log
+        if: always()
+        run: |
+          if [ -f /tmp/phyto-db.pid ]; then kill "$(cat /tmp/phyto-db.pid)" || true; fi
+          cat /tmp/phyto-db.log || true
