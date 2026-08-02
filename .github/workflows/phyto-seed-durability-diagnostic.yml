@@ -1,0 +1,127 @@
+name: Phyto Seed Durability Diagnostic
+
+on:
+  pull_request:
+    branches:
+      - audit/post-pr17-readiness
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: phyto
+          POSTGRES_PASSWORD: phyto
+          POSTGRES_DB: phyto_audit
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U phyto -d phyto_audit"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://phyto:phyto@127.0.0.1:5432/phyto_audit?schema=public
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install, migrate, and seed
+        run: |
+          npm ci
+          npx prisma validate
+          npx prisma migrate deploy
+          npx prisma migrate diff --exit-code --from-config-datasource --to-schema=prisma/schema.prisma
+          npx prisma db seed
+      - name: Verify seed through a fresh PostgreSQL connection
+        run: |
+          node <<'NODE'
+          const { Client } = require('pg');
+
+          async function main() {
+            const client = new Client({ connectionString: process.env.DATABASE_URL });
+            await client.connect();
+            try {
+              const counts = await client.query(
+                'SELECT (SELECT COUNT(*)::int FROM "protocols") AS protocol_count, ' +
+                '(SELECT COUNT(*)::int FROM "contributors") AS contributor_count'
+              );
+              const protocol = await client.query(
+                'SELECT "protocol_id", "status"::text FROM "protocols" WHERE "protocol_id" = $1',
+                ['protocol-001']
+              );
+              console.log('Fresh-connection counts:', counts.rows[0]);
+              console.log('Fresh-connection protocol-001:', protocol.rows);
+              if (counts.rows[0].protocol_count !== 2) throw new Error('Expected 2 protocols after seed.');
+              if (counts.rows[0].contributor_count !== 4) throw new Error('Expected 4 contributors after seed.');
+              if (protocol.rowCount !== 1) throw new Error('protocol-001 is not durable after seed process exit.');
+            } finally {
+              await client.end();
+            }
+          }
+
+          main().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
+      - name: Build and start packaged API
+        run: |
+          npm run build
+          npm start > /tmp/phyto-db.log 2>&1 &
+          echo $! > /tmp/phyto-db.pid
+          ready=false
+          for i in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:3000/health > /tmp/health.json; then
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+          test "$ready" = true
+      - name: Compare direct database and API lookup
+        run: |
+          status="$(curl --silent --show-error --output /tmp/protocol.json --write-out '%{http_code}' http://127.0.0.1:3000/protocols/protocol-001)"
+          echo "API HTTP status: $status"
+          cat /tmp/protocol.json
+          echo
+
+          node <<'NODE'
+          const { Client } = require('pg');
+
+          async function main() {
+            const client = new Client({ connectionString: process.env.DATABASE_URL });
+            await client.connect();
+            try {
+              const protocol = await client.query(
+                'SELECT "protocol_id", "status"::text FROM "protocols" WHERE "protocol_id" = $1',
+                ['protocol-001']
+              );
+              console.log('Direct lookup while API is running:', protocol.rows);
+            } finally {
+              await client.end();
+            }
+          }
+
+          main().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
+
+          test "$status" = "200"
+      - name: Print API log
+        if: always()
+        run: |
+          if [ -f /tmp/phyto-db.pid ]; then kill "$(cat /tmp/phyto-db.pid)" || true; fi
+          cat /tmp/phyto-db.log || true
