@@ -1,0 +1,47 @@
+name: Generate Phyto Dependency Remediation Lockfile
+
+on:
+  push:
+    branches:
+      - agent/phyto-dependency-remediation-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Regenerate lockfile within declared semver ranges
+        run: npm update prisma @prisma/client --package-lock-only --ignore-scripts
+      - name: Verify package manifest is unchanged
+        run: git diff --exit-code -- package.json
+      - name: Verify only lockfile changed
+        run: |
+          changed="$(git diff --name-only)"
+          test "$changed" = "package-lock.json"
+      - name: Validate clean install, build, and tests
+        run: |
+          npm ci
+          npm run build
+          npm test -- --runInBand
+      - name: Verify production dependency gate
+        run: npm audit --omit=dev --audit-level=high
+      - name: Upload regenerated lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: phyto-remediated-lockfile
+          path: package-lock.json
+          if-no-files-found: error
+          retention-days: 3
