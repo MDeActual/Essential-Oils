@@ -1,5 +1,6 @@
 name: Apply Enum Storage Alignment
 
+# Second push intentionally triggers this branch-only transformation after registration.
 on:
   push:
     branches:
