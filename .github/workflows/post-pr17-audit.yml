@@ -52,16 +52,8 @@ jobs:
             const report = JSON.parse(fs.readFileSync(file, 'utf8'));
             return report.metadata?.vulnerabilities ?? {};
           }
-          const all = read('/tmp/npm-audit-all.json');
-          const production = read('/tmp/npm-audit-production.json');
-          console.log('All dependencies:', all);
-          console.log('Production dependencies:', production);
-          const high = Number(production.high ?? 0);
-          const critical = Number(production.critical ?? 0);
-          if (high > 0 || critical > 0) {
-            console.error(`Production dependency audit contains ${high} high and ${critical} critical vulnerabilities.`);
-            process.exitCode = 1;
-          }
+          console.log('All dependencies:', read('/tmp/npm-audit-all.json'));
+          console.log('Production dependencies:', read('/tmp/npm-audit-production.json'));
           NODE
       - name: Upload dependency audit evidence
         if: always()
@@ -105,6 +97,26 @@ jobs:
         run: |
           if [ -f /tmp/phyto-no-db.pid ]; then kill "$(cat /tmp/phyto-no-db.pid)" || true; fi
           cat /tmp/phyto-no-db.log || true
+      - name: Enforce production dependency gate
+        if: always()
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const file = '/tmp/npm-audit-production.json';
+          if (!fs.existsSync(file)) {
+            console.error('Production dependency audit evidence is missing.');
+            process.exit(1);
+          }
+          const report = JSON.parse(fs.readFileSync(file, 'utf8'));
+          const vulnerabilities = report.metadata?.vulnerabilities ?? {};
+          const high = Number(vulnerabilities.high ?? 0);
+          const critical = Number(vulnerabilities.critical ?? 0);
+          console.log('Production dependency gate:', vulnerabilities);
+          if (high > 0 || critical > 0) {
+            console.error(`Production dependency audit contains ${high} high and ${critical} critical vulnerabilities.`);
+            process.exit(1);
+          }
+          NODE
 
   postgres-migration-seed-api:
     name: PostgreSQL migration, seed, and DB-backed API smoke test
