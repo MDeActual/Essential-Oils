@@ -1,22 +1,18 @@
 /**
  * index.ts — Server Entry Point
  *
- * Starts the Phyto.ai API server on the port specified by the PORT environment
- * variable (default: 3000). Loads .env via dotenv so DATABASE_URL is available
- * to the Prisma client when running locally.
- *
- * Usage:
- *   npm start          (compiled — runs dist/index.js)
- *   npm run dev        (ts-node — runs src/index.ts directly)
+ * Loads environment variables, validates the runtime/storage contract, and
+ * starts the API only when configuration is safe. Credential values are never
+ * included in startup diagnostics.
  */
 
 import "dotenv/config";
 import { createApp } from "./api";
+import { loadRuntimeConfig, safeRuntimeDiagnostics } from "./config/runtime";
 
-const PORT = parseInt(process.env["PORT"] ?? "3000", 10);
+const runtimeConfig = loadRuntimeConfig(process.env);
+const app = createApp(runtimeConfig);
 
-const app = createApp();
-
-app.listen(PORT, () => {
-  console.log(`Phyto.ai API running at http://localhost:${PORT}`);
+app.listen(runtimeConfig.port, () => {
+  console.log("Phyto.ai API started", safeRuntimeDiagnostics(runtimeConfig));
 });
