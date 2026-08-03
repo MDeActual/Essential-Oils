@@ -5,7 +5,10 @@ import {
 } from "../identity";
 
 function fetcherReturning(responseFactory: () => Response): jest.MockedFunction<typeof fetch> {
-  return jest.fn(async () => responseFactory()) as jest.MockedFunction<typeof fetch>;
+  const implementation = async (
+    ..._arguments: Parameters<typeof fetch>
+  ): Promise<Response> => responseFactory();
+  return jest.fn(implementation) as jest.MockedFunction<typeof fetch>;
 }
 
 function trustedJwks(): Record<string, unknown> {
