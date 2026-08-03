@@ -7,7 +7,7 @@
  */
 
 import { NextFunction, Request, Response } from "express";
-import { RuntimeConfig } from "../../config/runtime";
+import type { RuntimeConfig } from "../runtime";
 import { NotFoundError } from "../middleware/errorHandler";
 import { ProtocolService } from "../services/protocolService";
 import { ApiSuccessResponse, ProtocolDetail, ProtocolSummary } from "../types";
