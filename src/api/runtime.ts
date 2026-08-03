@@ -1,19 +1,29 @@
 /**
- * runtime.ts — Explicit API runtime and storage configuration
+ * runtime.ts — Explicit API runtime, storage, and identity configuration
  *
- * Development and test may use deterministic in-memory seed stores.
- * Staging and production require PostgreSQL. Loader-produced objects are
- * tracked by module identity so alternate entry points cannot pass a forged
- * structurally compatible object into createApp().
+ * Development and test may use deterministic in-memory storage and disabled
+ * authentication. Staging and production require PostgreSQL plus a statically
+ * configured OIDC issuer, audience, and HTTPS JWKS endpoint.
  */
 
 export type RuntimeMode = "development" | "test" | "staging" | "production";
 export type StorageMode = "memory" | "database";
+export type AuthMode = "disabled" | "oidc";
+export type JwtAlgorithm = "RS256";
+
+export interface OidcRuntimeConfig {
+  issuer: string;
+  audience: string;
+  jwksUri: string;
+  algorithms: readonly JwtAlgorithm[];
+}
 
 export interface RuntimeConfig {
   runtimeMode: RuntimeMode;
   storageMode: StorageMode;
   databaseConfigured: boolean;
+  authMode: AuthMode;
+  oidc: Readonly<OidcRuntimeConfig> | null;
   port: number;
 }
 
@@ -31,10 +41,24 @@ const RUNTIME_MODES = new Set<RuntimeMode>([
   "production",
 ]);
 const STORAGE_MODES = new Set<StorageMode>(["memory", "database"]);
+const AUTH_MODES = new Set<AuthMode>(["disabled", "oidc"]);
+const ALGORITHMS: readonly JwtAlgorithm[] = Object.freeze(["RS256"]);
 const validatedConfigurations = new WeakSet<object>();
 
 function nonEmpty(value: string | undefined): boolean {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+function requiredTrimmed(
+  environment: NodeJS.ProcessEnv,
+  key: string,
+  description: string
+): string {
+  const value = environment[key];
+  if (!nonEmpty(value)) {
+    throw new RuntimeConfigurationError(`${description} requires ${key}.`);
+  }
+  return value!.trim();
 }
 
 function runtimeModeFrom(environment: NodeJS.ProcessEnv): RuntimeMode {
@@ -65,12 +89,58 @@ function portFrom(environment: NodeJS.ProcessEnv): number {
   return port;
 }
 
+function absoluteHttpsUrl(value: string, field: string): string {
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new RuntimeConfigurationError(`${field} must be an absolute HTTPS URL.`);
+  }
+  if (parsed.protocol !== "https:" || parsed.username || parsed.password || parsed.hash) {
+    throw new RuntimeConfigurationError(
+      `${field} must be an absolute HTTPS URL without credentials or fragments.`
+    );
+  }
+  return parsed.toString();
+}
+
+function oidcConfigFrom(
+  environment: NodeJS.ProcessEnv,
+  authMode: AuthMode
+): Readonly<OidcRuntimeConfig> | null {
+  if (authMode === "disabled") return null;
+
+  const issuer = absoluteHttpsUrl(
+    requiredTrimmed(environment, "PHYTO_OIDC_ISSUER", "OIDC authentication"),
+    "PHYTO_OIDC_ISSUER"
+  );
+  const audience = requiredTrimmed(
+    environment,
+    "PHYTO_OIDC_AUDIENCE",
+    "OIDC authentication"
+  );
+  const jwksUri = absoluteHttpsUrl(
+    requiredTrimmed(environment, "PHYTO_OIDC_JWKS_URI", "OIDC authentication"),
+    "PHYTO_OIDC_JWKS_URI"
+  );
+
+  return Object.freeze({
+    issuer,
+    audience,
+    jwksUri,
+    algorithms: ALGORITHMS,
+  });
+}
+
 function validateRuntimeInvariants(config: RuntimeConfig): void {
   if (!RUNTIME_MODES.has(config.runtimeMode)) {
     throw new RuntimeConfigurationError("Runtime configuration contains an unsupported runtime mode.");
   }
   if (!STORAGE_MODES.has(config.storageMode)) {
     throw new RuntimeConfigurationError("Runtime configuration contains an unsupported storage mode.");
+  }
+  if (!AUTH_MODES.has(config.authMode)) {
+    throw new RuntimeConfigurationError("Runtime configuration contains an unsupported authentication mode.");
   }
   if (!Number.isSafeInteger(config.port) || config.port < 1 || config.port > 65535) {
     throw new RuntimeConfigurationError("Runtime configuration contains an invalid port.");
@@ -84,6 +154,27 @@ function validateRuntimeInvariants(config: RuntimeConfig): void {
       `${config.runtimeMode} runtime cannot use in-memory storage.`
     );
   }
+  if ((config.runtimeMode === "staging" || config.runtimeMode === "production")
+      && config.authMode !== "oidc") {
+    throw new RuntimeConfigurationError(
+      `${config.runtimeMode} runtime requires OIDC authentication.`
+    );
+  }
+  if (config.authMode === "oidc") {
+    if (!config.oidc) {
+      throw new RuntimeConfigurationError("OIDC authentication requires trusted provider configuration.");
+    }
+    absoluteHttpsUrl(config.oidc.issuer, "OIDC issuer");
+    absoluteHttpsUrl(config.oidc.jwksUri, "OIDC JWKS URI");
+    if (!nonEmpty(config.oidc.audience)) {
+      throw new RuntimeConfigurationError("OIDC authentication requires a non-empty audience.");
+    }
+    if (config.oidc.algorithms.length !== 1 || config.oidc.algorithms[0] !== "RS256") {
+      throw new RuntimeConfigurationError("Only the pinned RS256 JWT algorithm is supported.");
+    }
+  } else if (config.oidc !== null) {
+    throw new RuntimeConfigurationError("Disabled authentication cannot carry OIDC provider configuration.");
+  }
 }
 
 export function loadRuntimeConfig(
@@ -92,6 +183,8 @@ export function loadRuntimeConfig(
   const runtimeMode = runtimeModeFrom(environment);
   const databaseConfigured = nonEmpty(environment["DATABASE_URL"]);
   const requestedStorage = environment["PHYTO_STORAGE_MODE"];
+  const requestedAuth = environment["PHYTO_AUTH_MODE"]
+    ?? ((runtimeMode === "staging" || runtimeMode === "production") ? "oidc" : "disabled");
 
   if (requestedStorage !== undefined
       && !STORAGE_MODES.has(requestedStorage as StorageMode)) {
@@ -99,9 +192,15 @@ export function loadRuntimeConfig(
       `Unsupported storage mode '${requestedStorage}'. Expected memory or database.`
     );
   }
+  if (!AUTH_MODES.has(requestedAuth as AuthMode)) {
+    throw new RuntimeConfigurationError(
+      `Unsupported authentication mode '${requestedAuth}'. Expected disabled or oidc.`
+    );
+  }
 
   const storageMode = (requestedStorage as StorageMode | undefined)
     ?? (databaseConfigured ? "database" : "memory");
+  const authMode = requestedAuth as AuthMode;
 
   if (storageMode === "database" && !databaseConfigured) {
     throw new RuntimeConfigurationError(
@@ -113,6 +212,8 @@ export function loadRuntimeConfig(
     runtimeMode,
     storageMode,
     databaseConfigured,
+    authMode,
+    oidc: oidcConfigFrom(environment, authMode),
     port: portFrom(environment),
   };
   validateRuntimeInvariants(config);
@@ -140,6 +241,8 @@ export function safeRuntimeDiagnostics(
     runtimeMode: config.runtimeMode,
     storageMode: config.storageMode,
     databaseConfigured: config.databaseConfigured,
+    authMode: config.authMode,
+    identityConfigured: config.oidc !== null,
     port: config.port,
   };
 }
