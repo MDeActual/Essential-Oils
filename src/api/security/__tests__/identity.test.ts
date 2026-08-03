@@ -20,7 +20,7 @@ const config: Readonly<OidcRuntimeConfig> = Object.freeze({
   issuer: "https://issuer.example.test/",
   audience: "api://phyto-test",
   jwksUri: "https://issuer.example.test/.well-known/jwks.json",
-  algorithms: Object.freeze(["RS256"]),
+  algorithms: Object.freeze(["RS256"] as const),
 });
 
 class StaticProvider implements JwksProvider {
