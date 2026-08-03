@@ -1,6 +1,6 @@
 import request from "supertest";
-import { loadRuntimeConfig } from "../../config/runtime";
 import { createApp } from "../server";
+import { loadRuntimeConfig, RuntimeConfig } from "../runtime";
 
 describe("runtime-aware health probes", () => {
   const config = loadRuntimeConfig({
@@ -32,9 +32,22 @@ describe("runtime-aware health probes", () => {
     }));
   });
 
-  it("cannot construct a production app without database-backed storage", () => {
+  it("cannot load a production app without database-backed storage", () => {
     expect(() => createApp(loadRuntimeConfig({
       PHYTO_RUNTIME_MODE: "production",
     }))).toThrow(/cannot use in-memory storage/);
+  });
+
+  it("rejects a forged production-memory object at the application factory", () => {
+    const forged: RuntimeConfig = {
+      runtimeMode: "production",
+      storageMode: "memory",
+      databaseConfigured: false,
+      port: 3000,
+    };
+
+    expect(() => createApp(forged)).toThrow(
+      /produced by loadRuntimeConfig/
+    );
   });
 });
