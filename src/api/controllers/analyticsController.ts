@@ -1,67 +1,41 @@
-/**
- * analyticsController.ts — Public analytics endpoint controllers
- *
- * Storage selection is controlled by the validated runtime configuration.
- * LOCK-003 validation and protected analytics internals remain inside the
- * existing pipeline and service layers.
- */
-
 import { NextFunction, Request, Response } from "express";
 import { runProtocolSegmentPipeline } from "../../analytics/pipeline";
-import type { RuntimeConfig } from "../runtime";
 import { NotFoundError } from "../middleware/errorHandler";
+import type { RuntimeConfig } from "../runtime";
+import { tenantIdFromResponse } from "../security/middleware";
 import { AnalyticsService } from "../services/analyticsService";
-import {
-  AnalyticsProtocolDetailPayload,
-  AnalyticsProtocolsPayload,
-  ApiSuccessResponse,
-} from "../types";
+import { AnalyticsProtocolDetailPayload, AnalyticsProtocolsPayload, ApiSuccessResponse } from "../types";
 import { getAllContributorRecords } from "./analyticsStore";
 
-let databaseAnalyticsService: AnalyticsService | undefined;
-
-function analyticsServiceFor(res: Response): AnalyticsService | null {
+function analyticsServiceFor(res: Response, tenantId: string): AnalyticsService | null {
   const config = res.app.locals.runtimeConfig as Readonly<RuntimeConfig>;
   if (config.storageMode !== "database") return null;
-  if (!databaseAnalyticsService) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { PrismaContributorRepository } = require(
-      "../../db/implementations/PrismaContributorRepository"
-    ) as typeof import("../../db/implementations/PrismaContributorRepository");
-    databaseAnalyticsService = new AnalyticsService(
-      new PrismaContributorRepository()
-    );
-  }
-  return databaseAnalyticsService;
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { PrismaContributorRepository } = require(
+    "../../db/implementations/PrismaContributorRepository"
+  ) as typeof import("../../db/implementations/PrismaContributorRepository");
+  return new AnalyticsService(new PrismaContributorRepository(tenantId));
 }
 
-export function listAnalyticsProtocols(
-  _req: Request,
-  res: Response,
-  next: NextFunction
-): void {
-  const analyticsService = analyticsServiceFor(res);
+export function listAnalyticsProtocols(_req: Request, res: Response, next: NextFunction): void {
+  const tenantId = tenantIdFromResponse(res);
+  const analyticsService = analyticsServiceFor(res, tenantId);
   const serviceCall = analyticsService
     ? analyticsService.listProtocolAnalytics()
     : Promise.resolve((() => {
-        const records = getAllContributorRecords();
-        const result = runProtocolSegmentPipeline([...records]);
+        const result = runProtocolSegmentPipeline([...getAllContributorRecords(tenantId)]);
         if (!result.success) {
-          const message = result.errors.length > 0
-            ? result.errors[0].message
-            : "Analytics pipeline failed.";
-          throw new Error(message);
+          throw new Error(result.errors[0]?.message ?? "Analytics pipeline failed.");
         }
         return {
           protocolCount: result.protocolCount ?? 0,
           totalEligibleRecords: result.totalEligibleRecords ?? 0,
           totalExcludedRecords: result.totalExcludedRecords ?? 0,
-          segments: (result.segments ?? []).map((seg) => ({
-            protocolId: seg.protocolId,
-            eligibleRecordCount: seg.metrics.eligibleRecordCount,
-            averageAdherenceScore: seg.metrics.averageAdherenceScore,
-            averageChallengeCompletionRate:
-              seg.metrics.averageChallengeCompletionRate,
+          segments: (result.segments ?? []).map((segment) => ({
+            protocolId: segment.protocolId,
+            eligibleRecordCount: segment.metrics.eligibleRecordCount,
+            averageAdherenceScore: segment.metrics.averageAdherenceScore,
+            averageChallengeCompletionRate: segment.metrics.averageChallengeCompletionRate,
           })),
           generatedAt: result.generatedAt ?? new Date().toISOString(),
         };
@@ -79,35 +53,25 @@ export function listAnalyticsProtocols(
     .catch(next);
 }
 
-export function getAnalyticsProtocol(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
+export function getAnalyticsProtocol(req: Request, res: Response, next: NextFunction): void {
   const id = req.params["id"] as string;
-  const analyticsService = analyticsServiceFor(res);
+  const tenantId = tenantIdFromResponse(res);
+  const analyticsService = analyticsServiceFor(res, tenantId);
   const serviceCall = analyticsService
     ? analyticsService.getProtocolAnalytics(id)
     : Promise.resolve((() => {
-        const records = getAllContributorRecords();
-        const result = runProtocolSegmentPipeline([...records]);
+        const result = runProtocolSegmentPipeline([...getAllContributorRecords(tenantId)]);
         if (!result.success) {
-          const message = result.errors.length > 0
-            ? result.errors[0].message
-            : "Analytics pipeline failed.";
-          throw new Error(message);
+          throw new Error(result.errors[0]?.message ?? "Analytics pipeline failed.");
         }
-        const segment = (result.segments ?? []).find(
-          (seg) => seg.protocolId === id
-        );
+        const segment = (result.segments ?? []).find((candidate) => candidate.protocolId === id);
         if (!segment) return null;
         return {
           protocolId: segment.protocolId,
           eligibleRecordCount: segment.metrics.eligibleRecordCount,
           excludedRecordCount: segment.metrics.excludedRecordCount,
           averageAdherenceScore: segment.metrics.averageAdherenceScore,
-          averageChallengeCompletionRate:
-            segment.metrics.averageChallengeCompletionRate,
+          averageChallengeCompletionRate: segment.metrics.averageChallengeCompletionRate,
           minAdherenceScore: segment.metrics.minAdherenceScore,
           maxAdherenceScore: segment.metrics.maxAdherenceScore,
           exclusionBreakdown: segment.metrics.exclusionBreakdown,
@@ -121,7 +85,6 @@ export function getAnalyticsProtocol(
         next(new NotFoundError(`No analytics data found for protocol '${id}'.`));
         return;
       }
-
       const body: ApiSuccessResponse<AnalyticsProtocolDetailPayload> = {
         success: true,
         data: payload,
