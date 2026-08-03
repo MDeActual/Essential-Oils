@@ -69,6 +69,14 @@ interface JwkRecord {
   e?: unknown;
 }
 
+interface RsaPublicJwk {
+  kty: "RSA";
+  n: string;
+  e: string;
+  use: "sig";
+  alg: "RS256";
+}
+
 export interface JwksProvider {
   getSigningKey(kid: string): Promise<KeyObject>;
 }
@@ -170,17 +178,14 @@ function rsaPublicKey(jwk: JwkRecord): KeyObject {
     throw new AuthenticationError("invalid_jwks", "JWKS key algorithm is not allowed.");
   }
   try {
-    return createPublicKey({
-      key: {
-        kty: "RSA",
-        kid: jwk.kid,
-        n: jwk.n,
-        e: jwk.e,
-        use: "sig",
-        alg: "RS256",
-      } as JsonWebKey,
-      format: "jwk",
-    });
+    const publicJwk: RsaPublicJwk = {
+      kty: "RSA",
+      n: jwk.n,
+      e: jwk.e,
+      use: "sig",
+      alg: "RS256",
+    };
+    return createPublicKey({ key: publicJwk, format: "jwk" });
   } catch {
     throw new AuthenticationError("invalid_jwks", "JWKS public key could not be imported.");
   }
