@@ -1,22 +1,24 @@
 import request from "supertest";
+import { LOCAL_DEVELOPMENT_TENANT_ID } from "../../db/tenant";
 import { createApp } from "../server";
 import { loadRuntimeConfig } from "../runtime";
-import type {
-  AuthenticatedPrincipal,
-  TokenVerifier,
-} from "../security/identity";
+import type { AuthenticatedPrincipal, TokenVerifier } from "../security/identity";
 
 const TOKENS = {
   protocols: "aaa.bbb.ccc",
   analytics: "ddd.eee.fff",
   insufficient: "ggg.hhh.iii",
   invalid: "jjj.kkk.lll",
+  otherTenant: "mmm.nnn.ooo",
 };
 
-function principal(permissions: string[]): Readonly<AuthenticatedPrincipal> {
+function principal(
+  permissions: string[],
+  tenantId: string = LOCAL_DEVELOPMENT_TENANT_ID
+): Readonly<AuthenticatedPrincipal> {
   return Object.freeze({
     subject: "user-123",
-    tenantId: "tenant-a",
+    tenantId,
     permissions: Object.freeze([...permissions]),
     issuer: "https://issuer.example.test/",
     audience: "api://phyto-test",
@@ -29,6 +31,7 @@ class TestVerifier implements TokenVerifier {
     if (token === TOKENS.protocols) return principal(["protocols.read"]);
     if (token === TOKENS.analytics) return principal(["analytics.read"]);
     if (token === TOKENS.insufficient) return principal([]);
+    if (token === TOKENS.otherTenant) return principal(["protocols.read", "analytics.read"], "tenant-other");
     throw new Error("invalid test token");
   }
 }
@@ -43,10 +46,10 @@ const config = loadRuntimeConfig({
 });
 const app = createApp(config, { tokenVerifier: new TestVerifier() });
 
-function bearer(token: string): Record<string, string> {
+function bearer(token: string, tenantId = LOCAL_DEVELOPMENT_TENANT_ID): Record<string, string> {
   return {
     authorization: `Bearer ${token}`,
-    "x-phyto-tenant-id": "tenant-a",
+    "x-phyto-tenant-id": tenantId,
   };
 }
 
@@ -64,7 +67,7 @@ describe("authenticated API boundary", () => {
     await request(app)
       .get("/protocols")
       .set("authorization", "Basic abc")
-      .set("x-phyto-tenant-id", "tenant-a")
+      .set("x-phyto-tenant-id", LOCAL_DEVELOPMENT_TENANT_ID)
       .expect(401);
 
     await request(app)
@@ -79,6 +82,7 @@ describe("authenticated API boundary", () => {
       .set(bearer(TOKENS.protocols))
       .expect(200);
     expect(allowed.body.success).toBe(true);
+    expect(allowed.body.data).toHaveLength(2);
 
     await request(app)
       .get("/protocols")
@@ -87,10 +91,7 @@ describe("authenticated API boundary", () => {
 
     await request(app)
       .get("/protocols")
-      .set({
-        authorization: `Bearer ${TOKENS.protocols}`,
-        "x-phyto-tenant-id": "tenant-b",
-      })
+      .set(bearer(TOKENS.protocols, "tenant-other"))
       .expect(403);
   });
 
@@ -105,6 +106,22 @@ describe("authenticated API boundary", () => {
       .set(bearer(TOKENS.analytics))
       .expect(200);
     expect(allowed.body.success).toBe(true);
+    expect(allowed.body.data.totalEligibleRecords).toBe(3);
+  });
+
+  it("returns no local seed data to another authenticated tenant", async () => {
+    const protocols = await request(app)
+      .get("/protocols")
+      .set(bearer(TOKENS.otherTenant, "tenant-other"))
+      .expect(200);
+    expect(protocols.body.data).toEqual([]);
+
+    const analytics = await request(app)
+      .get("/analytics/protocols")
+      .set(bearer(TOKENS.otherTenant, "tenant-other"))
+      .expect(200);
+    expect(analytics.body.data.totalEligibleRecords).toBe(0);
+    expect(analytics.body.data.segments).toEqual([]);
   });
 
   it("requires explicit tenant context", async () => {
