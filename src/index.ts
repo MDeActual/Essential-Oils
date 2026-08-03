@@ -8,7 +8,7 @@
 
 import "dotenv/config";
 import { createApp } from "./api";
-import { loadRuntimeConfig, safeRuntimeDiagnostics } from "./config/runtime";
+import { loadRuntimeConfig, safeRuntimeDiagnostics } from "./api/runtime";
 
 const runtimeConfig = loadRuntimeConfig(process.env);
 const app = createApp(runtimeConfig);
