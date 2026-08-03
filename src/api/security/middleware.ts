@@ -1,4 +1,8 @@
 import { NextFunction, Request, RequestHandler, Response } from "express";
+import {
+  LOCAL_DEVELOPMENT_TENANT_ID,
+  validateTenantId,
+} from "../../db/tenant";
 import type { RuntimeConfig } from "../runtime";
 import type { ApiErrorResponse } from "../types";
 import {
@@ -36,9 +40,7 @@ function errorResponse(
     error: { code, message },
     generatedAt: new Date().toISOString(),
   };
-  if (status === 401) {
-    res.setHeader("WWW-Authenticate", "Bearer");
-  }
+  if (status === 401) res.setHeader("WWW-Authenticate", "Bearer");
   res.status(status).json(body);
 }
 
@@ -93,6 +95,7 @@ export function requirePermission(permission: string): RequestHandler {
 
 export const requireTenantContext: RequestHandler = (req, res, next): void => {
   if (runtimeConfig(res).authMode === "disabled") {
+    res.locals.tenantId = LOCAL_DEVELOPMENT_TENANT_ID;
     next();
     return;
   }
@@ -106,9 +109,17 @@ export const requireTenantContext: RequestHandler = (req, res, next): void => {
     errorResponse(res, 403, "FORBIDDEN", "The requested tenant context is not authorized.");
     return;
   }
-  res.locals.tenantId = authenticated.tenantId;
-  next();
+  try {
+    res.locals.tenantId = validateTenantId(authenticated.tenantId);
+    next();
+  } catch {
+    errorResponse(res, 403, "FORBIDDEN", "The requested tenant context is not authorized.");
+  }
 };
+
+export function tenantIdFromResponse(res: Response): string {
+  return validateTenantId(res.locals.tenantId as string);
+}
 
 export function protectedReadBoundary(permission: string): RequestHandler[] {
   return [authenticateRequest, requireTenantContext, requirePermission(permission)];
