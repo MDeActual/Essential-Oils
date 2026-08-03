@@ -6,8 +6,8 @@
  */
 
 import { Request, Response } from "express";
-import { RuntimeConfig } from "../../config/runtime";
 import { getPrismaClient } from "../../db/client";
+import type { RuntimeConfig } from "../runtime";
 import {
   ApiErrorResponse,
   ApiSuccessResponse,
@@ -62,7 +62,7 @@ export async function getReadiness(_req: Request, res: Response): Promise<void> 
   }
 
   try {
-    await getPrismaClient().$queryRawUnsafe("SELECT 1");
+    await getPrismaClient().$queryRaw`SELECT 1`;
     const payload: ReadinessPayload = {
       status: "ready",
       runtimeMode: config.runtimeMode,
