@@ -10,6 +10,7 @@ const MAX_TOKEN_BYTES = 16_384;
 const MAX_JWKS_BYTES = 1_048_576;
 const MAX_JWKS_KEYS = 32;
 const DEFAULT_CACHE_TTL_MS = 5 * 60 * 1000;
+const DEFAULT_UNKNOWN_KEY_REFRESH_INTERVAL_MS = 60 * 1000;
 const DEFAULT_CLOCK_TOLERANCE_SECONDS = 60;
 
 export type PrincipalPermission = "protocols.read" | "analytics.read" | string;
@@ -191,14 +192,54 @@ function rsaPublicKey(jwk: JwkRecord): KeyObject {
   }
 }
 
+async function boundedResponseBody(
+  response: Response,
+  controller: AbortController
+): Promise<string> {
+  const contentLength = response.headers.get("content-length");
+  if (contentLength !== null) {
+    if (!/^[0-9]+$/u.test(contentLength)
+        || Number(contentLength) > MAX_JWKS_BYTES) {
+      controller.abort();
+      throw new AuthenticationError("invalid_jwks", "JWKS response exceeds the allowed size.");
+    }
+  }
+  if (!response.body) {
+    throw new AuthenticationError("invalid_jwks", "JWKS response has no body.");
+  }
+
+  const reader = response.body.getReader();
+  const chunks: Buffer[] = [];
+  let totalBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > MAX_JWKS_BYTES) {
+        controller.abort();
+        throw new AuthenticationError("invalid_jwks", "JWKS response exceeds the allowed size.");
+      }
+      chunks.push(Buffer.from(value));
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  return Buffer.concat(chunks, totalBytes).toString("utf8");
+}
+
 export class RemoteJwksProvider implements JwksProvider {
   private readonly keys = new Map<string, KeyObject>();
   private cacheExpiresAt = 0;
+  private nextUnknownKeyRefreshAt = 0;
   private refreshPromise: Promise<void> | null = null;
 
   constructor(
     private readonly jwksUri: string,
-    private readonly cacheTtlMs = DEFAULT_CACHE_TTL_MS
+    private readonly cacheTtlMs = DEFAULT_CACHE_TTL_MS,
+    private readonly unknownKeyRefreshIntervalMs = DEFAULT_UNKNOWN_KEY_REFRESH_INTERVAL_MS,
+    private readonly fetcher: typeof fetch = fetch,
+    private readonly now: () => number = () => Date.now()
   ) {}
 
   private async refresh(): Promise<void> {
@@ -207,7 +248,7 @@ export class RemoteJwksProvider implements JwksProvider {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 5_000);
       try {
-        const response = await fetch(this.jwksUri, {
+        const response = await this.fetcher(this.jwksUri, {
           method: "GET",
           redirect: "error",
           signal: controller.signal,
@@ -216,11 +257,13 @@ export class RemoteJwksProvider implements JwksProvider {
         if (!response.ok) {
           throw new AuthenticationError("jwks_unavailable", "Trusted JWKS endpoint is unavailable.");
         }
-        const text = await response.text();
-        if (Buffer.byteLength(text, "utf8") > MAX_JWKS_BYTES) {
-          throw new AuthenticationError("invalid_jwks", "JWKS response exceeds the allowed size.");
+        const text = await boundedResponseBody(response, controller);
+        let document: unknown;
+        try {
+          document = JSON.parse(text);
+        } catch {
+          throw new AuthenticationError("invalid_jwks", "JWKS response is not valid JSON.");
         }
-        const document: unknown = JSON.parse(text);
         if (!isObject(document)
             || !Array.isArray(document.keys)
             || document.keys.length === 0
@@ -243,7 +286,9 @@ export class RemoteJwksProvider implements JwksProvider {
 
         this.keys.clear();
         for (const [kid, key] of refreshed) this.keys.set(kid, key);
-        this.cacheExpiresAt = Date.now() + this.cacheTtlMs;
+        const refreshedAt = this.now();
+        this.cacheExpiresAt = refreshedAt + this.cacheTtlMs;
+        this.nextUnknownKeyRefreshAt = refreshedAt + this.unknownKeyRefreshIntervalMs;
       } catch (error) {
         if (error instanceof AuthenticationError) throw error;
         throw new AuthenticationError("jwks_unavailable", "Trusted JWKS endpoint is unavailable.");
@@ -256,14 +301,24 @@ export class RemoteJwksProvider implements JwksProvider {
   }
 
   async getSigningKey(kid: string): Promise<KeyObject> {
-    if (Date.now() >= this.cacheExpiresAt || !this.keys.has(kid)) {
+    const lookupAt = this.now();
+    if (lookupAt >= this.cacheExpiresAt) {
       await this.refresh();
     }
-    const key = this.keys.get(kid);
-    if (!key) {
+
+    const cached = this.keys.get(kid);
+    if (cached) return cached;
+
+    if (this.now() < this.nextUnknownKeyRefreshAt) {
       throw new AuthenticationError("unknown_signing_key", "JWT signing key is not trusted.");
     }
-    return key;
+
+    await this.refresh();
+    const refreshed = this.keys.get(kid);
+    if (!refreshed) {
+      throw new AuthenticationError("unknown_signing_key", "JWT signing key is not trusted.");
+    }
+    return refreshed;
   }
 }
 
