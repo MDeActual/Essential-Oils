@@ -45,6 +45,8 @@ export enum RepositoryErrorCode {
   NotFound = "NOT_FOUND",
   /** A unique-constraint violation occurred during a write operation. */
   Conflict = "CONFLICT",
+  /** A tenant-scoped relation points at a record that does not exist. */
+  ForeignKeyViolation = "FOREIGN_KEY_VIOLATION",
   /** The database connection or query failed. */
   DatabaseError = "DATABASE_ERROR",
 }
