@@ -8,7 +8,7 @@
 
 import { NextFunction, Request, Response } from "express";
 import { runProtocolSegmentPipeline } from "../../analytics/pipeline";
-import { RuntimeConfig } from "../../config/runtime";
+import type { RuntimeConfig } from "../runtime";
 import { NotFoundError } from "../middleware/errorHandler";
 import { AnalyticsService } from "../services/analyticsService";
 import {
