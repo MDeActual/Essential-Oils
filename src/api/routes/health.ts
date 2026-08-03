@@ -1,16 +1,15 @@
 /**
- * health.ts — Health Route Definitions
- *
- * Mounts GET /health on the provided Express Router. The route is stateless
- * and dependency-free; it serves as a reliable liveness probe.
+ * health.ts — Liveness and readiness routes
  */
 
 import { Router } from "express";
-import { getHealth } from "../controllers/healthController";
+import { getHealth, getReadiness } from "../controllers/healthController";
 
 const router = Router();
 
-/** GET /health — liveness probe. */
 router.get("/", getHealth);
+router.get("/ready", (req, res, next) => {
+  getReadiness(req, res).catch(next);
+});
 
 export default router;
