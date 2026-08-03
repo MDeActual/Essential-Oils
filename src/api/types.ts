@@ -4,6 +4,8 @@
  * Defines the canonical read-only API response envelopes and public payloads.
  */
 
+import type { RuntimeMode, StorageMode } from "./runtime";
+
 export interface ApiSuccessResponse<T> {
   success: true;
   data: T;
@@ -25,14 +27,14 @@ export interface HealthPayload {
   status: "ok";
   version: string;
   uptime: number;
-  runtimeMode: "development" | "test" | "staging" | "production";
-  storageMode: "memory" | "database";
+  runtimeMode: RuntimeMode;
+  storageMode: StorageMode;
 }
 
 export interface ReadinessPayload {
   status: "ready";
-  runtimeMode: "development" | "test" | "staging" | "production";
-  storageMode: "memory" | "database";
+  runtimeMode: RuntimeMode;
+  storageMode: StorageMode;
   database: "connected" | "not_required";
 }
 
