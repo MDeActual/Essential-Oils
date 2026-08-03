@@ -35,7 +35,7 @@ describe("runtime-aware health probes", () => {
   it("cannot load a production app without database-backed storage", () => {
     expect(() => createApp(loadRuntimeConfig({
       PHYTO_RUNTIME_MODE: "production",
-    }))).toThrow(/cannot use in-memory storage/);
+    }))).toThrow(/requires DATABASE_URL|cannot use in-memory storage/);
   });
 
   it("rejects a forged production-memory object at the application factory", () => {
@@ -43,6 +43,8 @@ describe("runtime-aware health probes", () => {
       runtimeMode: "production",
       storageMode: "memory",
       databaseConfigured: false,
+      authMode: "disabled",
+      oidc: null,
       port: 3000,
     };
 
