@@ -20,8 +20,13 @@ ALTER TABLE "outcome_logs" ALTER COLUMN "tenant_id" SET NOT NULL;
 ALTER TABLE "challenges" DROP CONSTRAINT "challenges_protocol_id_fkey";
 ALTER TABLE "outcome_logs" DROP CONSTRAINT "outcome_logs_contributor_id_fkey";
 
--- The original global indexes are superseded by tenant-leading indexes below.
--- Removing them keeps the deployed database identical to the canonical Prisma schema.
+-- User-owned identifiers are tenant-local. Remove their former global uniqueness
+-- before creating the canonical compound tenant/entity keys.
+DROP INDEX "protocols_protocol_id_key";
+DROP INDEX "contributors_record_id_key";
+DROP INDEX "challenges_challenge_id_key";
+
+-- The original global lookup indexes are superseded by tenant-leading indexes.
 DROP INDEX "protocols_user_profile_id_idx";
 DROP INDEX "protocols_status_idx";
 DROP INDEX "contributors_protocol_id_idx";
