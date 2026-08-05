@@ -25,11 +25,25 @@ async function seedDatabase(connectionString: string): Promise<void> {
   await client.connect();
   try {
     await client.query("BEGIN");
-    await client.query('DELETE FROM "outcome_logs"');
-    await client.query('DELETE FROM "challenges"');
-    await client.query('DELETE FROM "contributors"');
-    await client.query('DELETE FROM "blends"');
-    await client.query('DELETE FROM "protocols"');
+
+    // Seed cleanup is strictly tenant-scoped. Never delete another tenant's rows
+    // or the shared global blend catalog.
+    await client.query(
+      'DELETE FROM "outcome_logs" WHERE "tenant_id" = $1',
+      [LOCAL_DEVELOPMENT_TENANT_ID]
+    );
+    await client.query(
+      'DELETE FROM "challenges" WHERE "tenant_id" = $1',
+      [LOCAL_DEVELOPMENT_TENANT_ID]
+    );
+    await client.query(
+      'DELETE FROM "contributors" WHERE "tenant_id" = $1',
+      [LOCAL_DEVELOPMENT_TENANT_ID]
+    );
+    await client.query(
+      'DELETE FROM "protocols" WHERE "tenant_id" = $1',
+      [LOCAL_DEVELOPMENT_TENANT_ID]
+    );
 
     for (const protocol of protocols) {
       await client.query(
