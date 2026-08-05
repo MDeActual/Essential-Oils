@@ -165,6 +165,13 @@ function validateHeader(header: JwtHeader): { algorithm: "RS256"; kid: string } 
   return { algorithm: "RS256", kid };
 }
 
+function isRs256SigningCandidate(jwk: JwkRecord): boolean {
+  if (jwk.kty !== "RSA") return false;
+  if (jwk.use !== undefined && jwk.use !== "sig") return false;
+  if (jwk.alg !== undefined && jwk.alg !== "RS256") return false;
+  return true;
+}
+
 function rsaPublicKey(jwk: JwkRecord): KeyObject {
   if (jwk.kty !== "RSA"
       || typeof jwk.kid !== "string"
@@ -228,10 +235,16 @@ async function boundedResponseBody(
   return Buffer.concat(chunks, totalBytes).toString("utf8");
 }
 
+function copyAuthenticationError(error: AuthenticationError): AuthenticationError {
+  return new AuthenticationError(error.code, error.message);
+}
+
 export class RemoteJwksProvider implements JwksProvider {
   private readonly keys = new Map<string, KeyObject>();
   private cacheExpiresAt = 0;
   private nextUnknownKeyRefreshAt = 0;
+  private refreshRetryAt = 0;
+  private lastRefreshFailure: AuthenticationError | null = null;
   private refreshPromise: Promise<void> | null = null;
 
   constructor(
@@ -241,6 +254,12 @@ export class RemoteJwksProvider implements JwksProvider {
     private readonly fetcher: typeof fetch = fetch,
     private readonly now: () => number = () => Date.now()
   ) {}
+
+  private throwIfRefreshBackoffActive(at: number): void {
+    if (at < this.refreshRetryAt && this.lastRefreshFailure) {
+      throw copyAuthenticationError(this.lastRefreshFailure);
+    }
+  }
 
   private async refresh(): Promise<void> {
     if (this.refreshPromise) return this.refreshPromise;
@@ -277,11 +296,15 @@ export class RemoteJwksProvider implements JwksProvider {
             throw new AuthenticationError("invalid_jwks", "JWKS contains a malformed key.");
           }
           const key = candidate as JwkRecord;
+          if (!isRs256SigningCandidate(key)) continue;
           const kid = exactString(key.kid, "JWKS kid");
           if (refreshed.has(kid)) {
-            throw new AuthenticationError("invalid_jwks", "JWKS contains duplicate key identifiers.");
+            throw new AuthenticationError("invalid_jwks", "JWKS contains duplicate RS256 signing key identifiers.");
           }
           refreshed.set(kid, rsaPublicKey(key));
+        }
+        if (refreshed.size === 0) {
+          throw new AuthenticationError("invalid_jwks", "JWKS contains no compatible RS256 signing keys.");
         }
 
         this.keys.clear();
@@ -289,9 +312,15 @@ export class RemoteJwksProvider implements JwksProvider {
         const refreshedAt = this.now();
         this.cacheExpiresAt = refreshedAt + this.cacheTtlMs;
         this.nextUnknownKeyRefreshAt = refreshedAt + this.unknownKeyRefreshIntervalMs;
+        this.refreshRetryAt = 0;
+        this.lastRefreshFailure = null;
       } catch (error) {
-        if (error instanceof AuthenticationError) throw error;
-        throw new AuthenticationError("jwks_unavailable", "Trusted JWKS endpoint is unavailable.");
+        const failure = error instanceof AuthenticationError
+          ? error
+          : new AuthenticationError("jwks_unavailable", "Trusted JWKS endpoint is unavailable.");
+        this.lastRefreshFailure = failure;
+        this.refreshRetryAt = this.now() + this.unknownKeyRefreshIntervalMs;
+        throw failure;
       } finally {
         clearTimeout(timeout);
         this.refreshPromise = null;
@@ -303,16 +332,19 @@ export class RemoteJwksProvider implements JwksProvider {
   async getSigningKey(kid: string): Promise<KeyObject> {
     const lookupAt = this.now();
     if (lookupAt >= this.cacheExpiresAt) {
+      this.throwIfRefreshBackoffActive(lookupAt);
       await this.refresh();
     }
 
     const cached = this.keys.get(kid);
     if (cached) return cached;
 
-    if (this.now() < this.nextUnknownKeyRefreshAt) {
+    const unknownLookupAt = this.now();
+    if (unknownLookupAt < this.nextUnknownKeyRefreshAt) {
       throw new AuthenticationError("unknown_signing_key", "JWT signing key is not trusted.");
     }
 
+    this.throwIfRefreshBackoffActive(unknownLookupAt);
     await this.refresh();
     const refreshed = this.keys.get(kid);
     if (!refreshed) {
