@@ -89,7 +89,7 @@ function portFrom(environment: NodeJS.ProcessEnv): number {
   return port;
 }
 
-function absoluteHttpsUrl(value: string, field: string): string {
+function validateAbsoluteHttpsUrl(value: string, field: string): URL {
   let parsed: URL;
   try {
     parsed = new URL(value);
@@ -101,7 +101,16 @@ function absoluteHttpsUrl(value: string, field: string): string {
       `${field} must be an absolute HTTPS URL without credentials or fragments.`
     );
   }
-  return parsed.toString();
+  return parsed;
+}
+
+function normalizedAbsoluteHttpsUrl(value: string, field: string): string {
+  return validateAbsoluteHttpsUrl(value, field).toString();
+}
+
+function exactAbsoluteHttpsUrl(value: string, field: string): string {
+  validateAbsoluteHttpsUrl(value, field);
+  return value;
 }
 
 function oidcConfigFrom(
@@ -110,7 +119,7 @@ function oidcConfigFrom(
 ): Readonly<OidcRuntimeConfig> | null {
   if (authMode === "disabled") return null;
 
-  const issuer = absoluteHttpsUrl(
+  const issuer = exactAbsoluteHttpsUrl(
     requiredTrimmed(environment, "PHYTO_OIDC_ISSUER", "OIDC authentication"),
     "PHYTO_OIDC_ISSUER"
   );
@@ -119,7 +128,7 @@ function oidcConfigFrom(
     "PHYTO_OIDC_AUDIENCE",
     "OIDC authentication"
   );
-  const jwksUri = absoluteHttpsUrl(
+  const jwksUri = normalizedAbsoluteHttpsUrl(
     requiredTrimmed(environment, "PHYTO_OIDC_JWKS_URI", "OIDC authentication"),
     "PHYTO_OIDC_JWKS_URI"
   );
@@ -164,8 +173,8 @@ function validateRuntimeInvariants(config: RuntimeConfig): void {
     if (!config.oidc) {
       throw new RuntimeConfigurationError("OIDC authentication requires trusted provider configuration.");
     }
-    absoluteHttpsUrl(config.oidc.issuer, "OIDC issuer");
-    absoluteHttpsUrl(config.oidc.jwksUri, "OIDC JWKS URI");
+    validateAbsoluteHttpsUrl(config.oidc.issuer, "OIDC issuer");
+    validateAbsoluteHttpsUrl(config.oidc.jwksUri, "OIDC JWKS URI");
     if (!nonEmpty(config.oidc.audience)) {
       throw new RuntimeConfigurationError("OIDC authentication requires a non-empty audience.");
     }
