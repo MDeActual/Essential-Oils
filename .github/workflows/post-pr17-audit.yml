@@ -234,6 +234,7 @@ jobs:
           npx prisma db execute --stdin <<'SQL'
           INSERT INTO "contributors" (
             "id",
+            "tenant_id",
             "record_id",
             "user_id",
             "protocol_id",
@@ -248,6 +249,7 @@ jobs:
             "updated_at"
           ) VALUES (
             'audit-synthetic-id',
+            'tenant-local',
             'audit-synthetic-record',
             'audit-synthetic-user',
             'protocol-001',
