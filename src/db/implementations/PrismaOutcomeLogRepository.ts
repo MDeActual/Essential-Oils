@@ -25,11 +25,9 @@ export class PrismaOutcomeLogRepository implements IOutcomeLogRepository {
 
   async findById(id: string): Promise<OutcomeLog | null> {
     try {
-      const rows = await this.db.outcomeLog.findMany({
-        where: { id, tenantId: this.tenantId },
-        take: 1,
+      const row = await this.db.outcomeLog.findUnique({
+        where: { tenantId_id: { tenantId: this.tenantId, id } },
       });
-      const row = rows[0];
       return row ? prismaOutcomeLogToDomain(row) : null;
     } catch (err) { throw toRepositoryError(err); }
   }
