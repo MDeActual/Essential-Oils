@@ -177,6 +177,7 @@ model OutcomeLog {
 
   contributor Contributor @relation(fields: [tenantId, contributorId], references: [tenantId, recordId])
 
+  @@unique([tenantId, id])
   @@index([tenantId, contributorId])
   @@index([tenantId, protocolId])
   @@map("outcome_logs")
