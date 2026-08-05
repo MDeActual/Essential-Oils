@@ -76,6 +76,18 @@ describe("authenticated API boundary", () => {
       .expect(401);
   });
 
+  it("accepts case-insensitive Bearer authentication scheme names", async () => {
+    const response = await request(app)
+      .get("/protocols")
+      .set({
+        authorization: `bearer ${TOKENS.protocols}`,
+        "x-phyto-tenant-id": LOCAL_DEVELOPMENT_TENANT_ID,
+      })
+      .expect(200);
+
+    expect(response.body.success).toBe(true);
+  });
+
   it("allows protocol reads only with protocols.read and a matching tenant", async () => {
     const allowed = await request(app)
       .get("/protocols")
