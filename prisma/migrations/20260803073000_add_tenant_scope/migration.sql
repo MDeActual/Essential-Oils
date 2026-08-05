@@ -42,6 +42,8 @@ CREATE UNIQUE INDEX "contributors_tenant_id_record_id_key"
   ON "contributors"("tenant_id", "record_id");
 CREATE UNIQUE INDEX "challenges_tenant_id_challenge_id_key"
   ON "challenges"("tenant_id", "challenge_id");
+CREATE UNIQUE INDEX "outcome_logs_tenant_id_id_key"
+  ON "outcome_logs"("tenant_id", "id");
 
 CREATE INDEX "protocols_tenant_id_user_profile_id_idx"
   ON "protocols"("tenant_id", "user_profile_id");
