@@ -56,6 +56,16 @@ describe("loadRuntimeConfig", () => {
     });
   });
 
+  it("preserves the exact configured issuer string for JWT iss matching", () => {
+    const config = loadRuntimeConfig(env({
+      NODE_ENV: "test",
+      ...OIDC,
+      PHYTO_OIDC_ISSUER: "https://issuer.example.test",
+    }));
+
+    expect(config.oidc?.issuer).toBe("https://issuer.example.test");
+  });
+
   it.each(["staging", "production"])(
     "fails closed when %s has no database configuration",
     (runtimeMode) => {
