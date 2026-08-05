@@ -76,7 +76,7 @@ model Contributor {
   /// Security boundary. Every contributor row belongs to exactly one tenant.
   tenantId String @map("tenant_id")
 
-  recordId String @unique @map("record_id")
+  recordId String @map("record_id")
   userId String @map("user_id")
   protocolId String @map("protocol_id")
   dataOrigin DataOrigin @map("data_origin")
@@ -102,7 +102,7 @@ model Protocol {
   /// Security boundary. Every protocol belongs to exactly one tenant.
   tenantId String @map("tenant_id")
 
-  protocolId String @unique @map("protocol_id")
+  protocolId String @map("protocol_id")
   version String
   userProfileId String @map("user_profile_id")
   goal String
@@ -127,7 +127,7 @@ model Challenge {
   /// Security boundary inherited from and constrained to the parent protocol.
   tenantId String @map("tenant_id")
 
-  challengeId String @unique @map("challenge_id")
+  challengeId String @map("challenge_id")
   protocolId String @map("protocol_id")
   type ChallengeType
   prompt String
