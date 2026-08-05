@@ -62,9 +62,21 @@ function requiredTrimmed(
 }
 
 function runtimeModeFrom(environment: NodeJS.ProcessEnv): RuntimeMode {
-  const raw = environment["PHYTO_RUNTIME_MODE"]
-    ?? environment["NODE_ENV"]
-    ?? "development";
+  const explicitMode = environment["PHYTO_RUNTIME_MODE"];
+  const nodeMode = environment["NODE_ENV"];
+
+  // Deployment platforms conventionally set NODE_ENV=production. A stale or
+  // locally inherited override must never weaken production storage or identity
+  // invariants, so production may only remain production.
+  if (nodeMode === "production"
+      && explicitMode !== undefined
+      && explicitMode !== "production") {
+    throw new RuntimeConfigurationError(
+      "NODE_ENV=production cannot be downgraded by PHYTO_RUNTIME_MODE."
+    );
+  }
+
+  const raw = explicitMode ?? nodeMode ?? "development";
   if (!RUNTIME_MODES.has(raw as RuntimeMode)) {
     throw new RuntimeConfigurationError(
       `Unsupported runtime mode '${raw}'. Expected development, test, staging, or production.`
