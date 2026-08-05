@@ -66,6 +66,9 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `docs/ADR-013_ANALYTICS_INTELLIGENCE_SIGNAL_LAYER.md` | ADR for analytics intelligence signal layer | ⬜ |
 | `docs/ADR-014_DEVOS_ARTIFACT_SCOPING.md` | ADR for relocating reusable DevOS artifacts under `devos/` | ⬜ |
 | `docs/ADR-015_CLOUD_MATRIX_DEVOS_FOUNDATION.md` | ADR for establishing Cloud Matrix DevOS Foundation v0.1 | ⬜ |
+| `docs/ADR-016_FAIL_CLOSED_RUNTIME_CONFIGURATION.md` | ADR for fail-closed runtime, storage selection, and readiness behavior | ⬜ |
+| `docs/ADR-017_API_IDENTITY_AND_TENANT_BOUNDARY.md` | Accepted ADR for OIDC identity, endpoint authorization, and tenant-isolated persistence | ⬜ |
+| `docs/API_IDENTITY_THREAT_MODEL.md` | Threat model for JWT verification, authorization, JWKS retrieval, and tenant isolation | ⬜ |
 
 ---
 
@@ -89,8 +92,8 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `src/challenge/` | Challenge lifecycle, state transitions, participation and completion records | **Complete (Phase 1)** |
 | `src/analytics/` | Contributor analytics pipeline | **Complete (Phase 2)** |
 | `src/simulation/` | Synthetic simulation environment | **Complete (Phase 1)** |
-| `src/api/` | External API layer | **Complete (Phase 3)** |
-| `src/db/` | Persistence layer — Prisma schema, repository interfaces, and Prisma-backed implementations | **Complete (Phase 4)** |
+| `src/api/` | External API layer with fail-closed runtime and identity boundary | **Complete (Phase 4)** |
+| `src/db/` | Tenant-isolated persistence layer — Prisma schema, repository interfaces, and implementations | **Complete (Phase 4)** |
 
 ### /src/ontology — Files
 
@@ -165,22 +168,30 @@ This index is the authoritative map of all files, modules, and documents in the 
 
 | File | Description |
 |------|-------------|
-| `src/api/server.ts` | Express application factory (createApp); mounts all routes and error handling middleware |
+| `src/api/server.ts` | Express application factory (`createApp`); validates runtime config, constructs trusted identity dependencies, and mounts routes |
+| `src/api/runtime.ts` | Explicit runtime/storage/authentication configuration with staging/production fail-closed invariants |
 | `src/api/types.ts` | Shared API response envelope types: ApiSuccessResponse, ApiErrorResponse, HealthPayload, ProtocolSummary, ProtocolDetail, AnalyticsProtocolsPayload, AnalyticsProtocolDetailPayload |
-| `src/api/index.ts` | Public module interface (exports createApp and all response types) |
-| `src/api/routes/health.ts` | GET /health route definition |
-| `src/api/routes/protocols.ts` | GET /protocols and GET /protocols/:id route definitions |
-| `src/api/routes/analytics.ts` | GET /analytics/protocols and GET /analytics/protocols/:id route definitions |
-| `src/api/controllers/healthController.ts` | GET /health handler — returns liveness status, version, uptime |
-| `src/api/controllers/protocolController.ts` | GET /protocols and GET /protocols/:id handlers — delegates to ProtocolService (Prisma-backed when configured); shapes moat-safe response |
-| `src/api/controllers/protocolStore.ts` | In-memory protocol data registry (read-only); seed data for integration tests |
-| `src/api/controllers/analyticsController.ts` | GET /analytics/protocols and GET /analytics/protocols/:id handlers — delegates to AnalyticsService (Prisma-backed when configured) |
-| `src/api/controllers/analyticsStore.ts` | In-memory contributor record registry (read-only); seed data satisfying LOCK-003 |
+| `src/api/index.ts` | Public module interface |
+| `src/api/security/identity.ts` | RS256 JWT verification and bounded, throttled remote JWKS provider |
+| `src/api/security/middleware.ts` | Authentication, permission, and verified tenant-context middleware |
+| `src/api/routes/health.ts` | GET /health and GET /health/ready route definitions |
+| `src/api/routes/protocols.ts` | Protected GET /protocols and GET /protocols/:id route definitions |
+| `src/api/routes/analytics.ts` | Protected GET /analytics/protocols and GET /analytics/protocols/:id route definitions |
+| `src/api/controllers/healthController.ts` | Liveness and readiness handlers |
+| `src/api/controllers/protocolController.ts` | Tenant-aware protocol list and detail handlers |
+| `src/api/controllers/protocolStore.ts` | Tenant-local in-memory protocol registry for development/test |
+| `src/api/controllers/analyticsController.ts` | Tenant-aware analytics handlers |
+| `src/api/controllers/analyticsStore.ts` | Tenant-local in-memory contributor registry satisfying LOCK-003 |
 | `src/api/services/protocolService.ts` | Service layer for protocol read operations; maps repository domain objects to API payloads |
-| `src/api/services/analyticsService.ts` | Service layer for analytics read operations; fetches contributor records via repository and runs segmentation pipeline |
+| `src/api/services/analyticsService.ts` | Service layer for analytics read operations; fetches tenant-scoped contributors and runs segmentation pipeline |
 | `src/api/middleware/errorHandler.ts` | Global Express error-handling middleware; ValidationError (400), NotFoundError (404), fallback (500) |
 | `src/api/middleware/validateId.ts` | Path parameter validation middleware — enforces canonical identifier format |
-| `src/api/__tests__/api.test.ts` | Integration tests for all five endpoints (26 tests) |
+| `src/api/__tests__/api.test.ts` | Integration tests for public and product endpoints |
+| `src/api/__tests__/authorization.test.ts` | Authentication, permission, tenant-matching, and memory-isolation integration tests |
+| `src/api/__tests__/runtime.test.ts` | Runtime configuration and safe diagnostics tests |
+| `src/api/__tests__/readiness.test.ts` | Liveness, readiness, and forged configuration tests |
+| `src/api/security/__tests__/identity.test.ts` | Cryptographic JWT verification tests |
+| `src/api/security/__tests__/jwksProvider.test.ts` | JWKS bounds, classification, and refresh-throttling tests |
 
 ---
 
@@ -189,20 +200,21 @@ This index is the authoritative map of all files, modules, and documents in the 
 | File | Description |
 |------|-------------|
 | `src/db/types.ts` | Shared persistence types: PaginationOptions, PagedResult, RepositoryError, RepositoryErrorCode |
-| `src/db/client.ts` | Prisma client singleton factory (getPrismaClient) |
+| `src/db/tenant.ts` | Canonical tenant identifier validation and explicit local/test tenant constant |
+| `src/db/client.ts` | Prisma client singleton factory (`getPrismaClient`) |
 | `src/db/mappers.ts` | Bidirectional mappers between Prisma enum/model types and domain types |
 | `src/db/repositories/contributorRepository.ts` | IContributorRepository interface; CreateContributorInput, UpdateContributorInput types |
 | `src/db/repositories/protocolRepository.ts` | IProtocolRepository interface; CreateProtocolInput, UpdateProtocolInput types |
 | `src/db/repositories/challengeRepository.ts` | IChallengeRepository interface; CreateChallengeInput, UpdateChallengeInput types |
 | `src/db/repositories/blendRepository.ts` | IBlendRepository interface; CreateBlendInput, UpdateBlendInput types |
 | `src/db/repositories/outcomeLogRepository.ts` | IOutcomeLogRepository interface; OutcomeLog, CreateOutcomeLogInput types |
-| `src/db/implementations/PrismaContributorRepository.ts` | Prisma-backed implementation of IContributorRepository |
-| `src/db/implementations/PrismaProtocolRepository.ts` | Prisma-backed implementation of IProtocolRepository |
-| `src/db/implementations/PrismaChallengeRepository.ts` | Prisma-backed implementation of IChallengeRepository |
-| `src/db/implementations/PrismaBlendRepository.ts` | Prisma-backed implementation of IBlendRepository |
-| `src/db/implementations/PrismaOutcomeLogRepository.ts` | Prisma-backed implementation of IOutcomeLogRepository |
+| `src/db/implementations/PrismaContributorRepository.ts` | Tenant-bound Prisma implementation of IContributorRepository |
+| `src/db/implementations/PrismaProtocolRepository.ts` | Tenant-bound Prisma implementation of IProtocolRepository |
+| `src/db/implementations/PrismaChallengeRepository.ts` | Tenant-bound Prisma implementation of IChallengeRepository |
+| `src/db/implementations/PrismaBlendRepository.ts` | Prisma implementation for the intentionally global curated Blend catalog |
+| `src/db/implementations/PrismaOutcomeLogRepository.ts` | Tenant-bound Prisma implementation of IOutcomeLogRepository |
 | `src/db/index.ts` | Public module interface for the persistence layer |
-| `src/db/__tests__/repositories.test.ts` | Unit tests for all Prisma repository implementations (mocked Prisma client) |
+| `src/db/__tests__/repositories.test.ts` | Unit tests for Prisma repository implementations |
 
 ---
 
@@ -210,9 +222,12 @@ This index is the authoritative map of all files, modules, and documents in the 
 
 | File | Description |
 |------|-------------|
-| `prisma/schema.prisma` | Prisma schema — models: Contributor, Protocol, Challenge, Blend, OutcomeLog; enums aligned with domain layer |
-| `prisma.config.ts` | Prisma 7 configuration — datasource URL from DATABASE_URL environment variable |
-| `.env.example` | Placeholder environment variable file; actual .env is git-ignored |
+| `prisma/schema.prisma` | Canonical Prisma schema with tenant keys on user-owned models and tenant-matched relations |
+| `prisma/migrations/20260502120000_init/migration.sql` | Initial PostgreSQL schema migration |
+| `prisma/migrations/20260803073000_add_tenant_scope/migration.sql` | Tenant-boundary migration for user-owned data |
+| `prisma/seed.ts` | Idempotent, tenant-scoped local/test seed and committed-state verification |
+| `prisma.config.ts` | Prisma 7 configuration — datasource URL from `DATABASE_URL` |
+| `.env.example` | Placeholder environment variable file; actual `.env` is git-ignored |
 
 ---
 
@@ -228,4 +243,4 @@ This index is the authoritative map of all files, modules, and documents in the 
 
 - Files marked ✅ in the Locked column correspond to decisions in `docs/ARCHITECTURE_LOCK.md`.
 - Agents must not create new top-level files or modules without updating this index.
-- The `/src` module structure is planned; actual file creation requires an ADR.
+- Structural changes require an accepted ADR and corresponding index update.

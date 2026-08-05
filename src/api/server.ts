@@ -1,10 +1,10 @@
 /**
  * server.ts — Express Application Factory
  *
- * Assembles the read-only Phyto.ai API and binds it to an explicit,
- * loader-produced runtime configuration. The factory revalidates the boundary
- * before registering routes, so alternate entry points cannot serve seed data
- * under forged staging or production settings.
+ * Assembles the read-only Phyto.ai API and binds it to loader-produced runtime
+ * configuration. OIDC mode receives a verifier built from the static trusted
+ * issuer/audience/JWKS configuration. Test-only dependency injection is
+ * permitted for cryptographic boundary tests and rejected elsewhere.
  */
 
 import express, { Request, Response } from "express";
@@ -14,20 +14,40 @@ import healthRouter from "./routes/health";
 import protocolsRouter from "./routes/protocols";
 import {
   RuntimeConfig,
+  RuntimeConfigurationError,
   assertValidatedRuntimeConfig,
   loadRuntimeConfig,
 } from "./runtime";
+import { createOidcTokenVerifier } from "./security/identity";
+import type { SecurityDependencies } from "./security/middleware";
 import { ApiErrorResponse } from "./types";
 
 export function createApp(
-  runtimeConfig: Readonly<RuntimeConfig> = loadRuntimeConfig()
+  runtimeConfig: Readonly<RuntimeConfig> = loadRuntimeConfig(),
+  securityDependencies: Readonly<SecurityDependencies> = {}
 ): express.Application {
   assertValidatedRuntimeConfig(runtimeConfig);
 
+  if (securityDependencies.tokenVerifier && runtimeConfig.runtimeMode !== "test") {
+    throw new RuntimeConfigurationError(
+      "Custom token verifiers are permitted only in the test runtime."
+    );
+  }
+  if (runtimeConfig.authMode === "disabled" && securityDependencies.tokenVerifier) {
+    throw new RuntimeConfigurationError(
+      "Disabled authentication cannot accept a token verifier."
+    );
+  }
+
   const app = express();
   app.locals.runtimeConfig = runtimeConfig;
+  if (runtimeConfig.authMode === "oidc") {
+    app.locals.tokenVerifier = securityDependencies.tokenVerifier
+      ?? createOidcTokenVerifier(runtimeConfig.oidc!);
+  }
 
-  app.use(express.json());
+  app.disable("x-powered-by");
+  app.use(express.json({ limit: "64kb" }));
 
   app.use("/health", healthRouter);
   app.use("/protocols", protocolsRouter);

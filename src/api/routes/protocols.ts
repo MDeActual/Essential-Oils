@@ -1,24 +1,19 @@
 /**
  * protocols.ts — Protocol Route Definitions
  *
- * Mounts the read-only protocol endpoints on the provided Express Router:
- *   GET /protocols       — list all protocol summaries
- *   GET /protocols/:id   — get detail for a single protocol
- *
- * The :id parameter is validated before reaching the controller via the
- * validateId middleware to prevent malformed identifiers from propagating.
+ * Protocol reads require a verified principal, explicit matching tenant
+ * context, and the `protocols.read` permission whenever OIDC mode is enabled.
  */
 
 import { Router } from "express";
 import { getProtocol, listProtocols } from "../controllers/protocolController";
 import { validateId } from "../middleware/validateId";
+import { protectedReadBoundary } from "../security/middleware";
 
 const router = Router();
+const protocolRead = protectedReadBoundary("protocols.read");
 
-/** GET /protocols — list all protocol summaries. */
-router.get("/", listProtocols);
-
-/** GET /protocols/:id — get a single protocol by id. */
-router.get("/:id", validateId, getProtocol);
+router.get("/", ...protocolRead, listProtocols);
+router.get("/:id", ...protocolRead, validateId, getProtocol);
 
 export default router;

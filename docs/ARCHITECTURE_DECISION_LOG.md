@@ -322,3 +322,22 @@ The analytics signal model (M-004) is intentionally excluded. This module handle
 - All 471 existing domain/analytics tests continue to pass; 26 new API integration tests are added (497 total).
 
 ---
+
+### ADR-017: API Identity, Authorization, and Tenant Boundary
+**Status**: ACCEPTED
+**Date**: 2026-08-03
+**Deciders**: DevOS Orchestrator under founder-authorized autonomous engineering execution
+
+**Context**: The read-only API had verified data-integrity, persistence, and fail-closed runtime controls but accepted product requests without an authenticated principal, permission check, or enforceable tenant boundary. Application identity and tenant-isolated persistence were required before external staging or user-specific workflows.
+
+**Decision**: Adopt the provider-neutral OIDC, authorization, and tenant-isolation architecture documented in `docs/ADR-017_API_IDENTITY_AND_TENANT_BOUNDARY.md`. Staging and production require static trusted issuer, audience, HTTPS JWKS, pinned RS256 validation, verified permissions, and a tenant claim matching the explicit request tenant. User-owned persistence is tenant-keyed; repositories are tenant-bound; relations use tenant-matched compound keys; deterministic fixtures belong only to `tenant-local`.
+
+**Consequences**:
+- Protocol and analytics endpoints fail closed without verified identity, required permission, and authorized tenant context.
+- Protocol, contributor, challenge, and outcome-log identifiers are tenant-local and all user-owned queries include the validated tenant.
+- The Blend catalog remains intentionally global curated product data.
+- Development and test may explicitly disable authentication under `tenant-local`; staging and production may not.
+- Real identity-provider provisioning, credentials, cloud infrastructure, and deployment remain separate approval boundaries.
+- `docs/API_IDENTITY_THREAT_MODEL.md` is the canonical threat analysis for this decision.
+
+---

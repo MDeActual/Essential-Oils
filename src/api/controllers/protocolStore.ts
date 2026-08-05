@@ -1,21 +1,6 @@
-/**
- * protocolStore.ts — In-Memory Protocol Data Store
- *
- * Provides a simple in-memory registry of Protocol records for use by the
- * protocol controllers. This store is the sole data source for the API layer's
- * protocol endpoints — controllers must not embed data directly.
- *
- * In a production deployment this would be replaced by a database-backed
- * repository. The store interface is intentionally minimal and read-only to
- * match the API's read-only contract.
- *
- * MOAT NOTICE (M-002): Protocol records stored here are structural data only.
- * The protocol generation algorithm is moat-protected and must not appear here.
- */
-
 import { Protocol, ProtocolStatus } from "../../protocol/types";
+import { LOCAL_DEVELOPMENT_TENANT_ID, validateTenantId } from "../../db/tenant";
 
-/** Seed protocols for demonstration and integration testing. */
 const PROTOCOL_REGISTRY: Protocol[] = [
   {
     protocolId: "protocol-001",
@@ -67,19 +52,18 @@ const PROTOCOL_REGISTRY: Protocol[] = [
   },
 ];
 
-/**
- * Returns all Protocol records in the registry.
- * Callers must not mutate the returned array or its contents.
- */
-export function getAllProtocols(): ReadonlyArray<Readonly<Protocol>> {
-  return PROTOCOL_REGISTRY;
+export function getAllProtocols(
+  tenantId: string = LOCAL_DEVELOPMENT_TENANT_ID
+): ReadonlyArray<Readonly<Protocol>> {
+  return validateTenantId(tenantId) === LOCAL_DEVELOPMENT_TENANT_ID
+    ? PROTOCOL_REGISTRY
+    : [];
 }
 
-/**
- * Returns a single Protocol by its canonical protocolId, or undefined if not found.
- */
 export function getProtocolById(
-  protocolId: string
+  protocolId: string,
+  tenantId: string = LOCAL_DEVELOPMENT_TENANT_ID
 ): Readonly<Protocol> | undefined {
-  return PROTOCOL_REGISTRY.find((p) => p.protocolId === protocolId);
+  if (validateTenantId(tenantId) !== LOCAL_DEVELOPMENT_TENANT_ID) return undefined;
+  return PROTOCOL_REGISTRY.find((protocol) => protocol.protocolId === protocolId);
 }
