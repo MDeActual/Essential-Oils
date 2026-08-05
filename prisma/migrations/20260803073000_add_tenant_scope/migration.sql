@@ -20,6 +20,17 @@ ALTER TABLE "outcome_logs" ALTER COLUMN "tenant_id" SET NOT NULL;
 ALTER TABLE "challenges" DROP CONSTRAINT "challenges_protocol_id_fkey";
 ALTER TABLE "outcome_logs" DROP CONSTRAINT "outcome_logs_contributor_id_fkey";
 
+-- The original global indexes are superseded by tenant-leading indexes below.
+-- Removing them keeps the deployed database identical to the canonical Prisma schema.
+DROP INDEX "protocols_user_profile_id_idx";
+DROP INDEX "protocols_status_idx";
+DROP INDEX "contributors_protocol_id_idx";
+DROP INDEX "contributors_data_origin_exclusion_status_idx";
+DROP INDEX "challenges_protocol_id_idx";
+DROP INDEX "challenges_completion_status_idx";
+DROP INDEX "outcome_logs_contributor_id_idx";
+DROP INDEX "outcome_logs_protocol_id_idx";
+
 CREATE UNIQUE INDEX "protocols_tenant_id_protocol_id_key"
   ON "protocols"("tenant_id", "protocol_id");
 CREATE UNIQUE INDEX "contributors_tenant_id_record_id_key"
