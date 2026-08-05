@@ -10,7 +10,7 @@ import {
   TokenVerifier,
 } from "./identity";
 
-const BEARER_TOKEN = /^Bearer ([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/u;
+const BEARER_TOKEN = /^Bearer ([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/iu;
 const TENANT_HEADER = "x-phyto-tenant-id";
 
 export interface SecurityDependencies {
