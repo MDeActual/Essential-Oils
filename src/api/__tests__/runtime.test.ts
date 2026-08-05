@@ -66,6 +66,18 @@ describe("loadRuntimeConfig", () => {
     expect(config.oidc?.issuer).toBe("https://issuer.example.test");
   });
 
+  it.each(["development", "test", "staging"])(
+    "rejects PHYTO_RUNTIME_MODE=%s when NODE_ENV is production",
+    (runtimeMode) => {
+      expect(() => loadRuntimeConfig(env({
+        NODE_ENV: "production",
+        PHYTO_RUNTIME_MODE: runtimeMode,
+        DATABASE_URL: "postgresql://configured",
+        PHYTO_AUTH_MODE: "disabled",
+      }))).toThrow(/cannot be downgraded/);
+    }
+  );
+
   it.each(["staging", "production"])(
     "fails closed when %s has no database configuration",
     (runtimeMode) => {
