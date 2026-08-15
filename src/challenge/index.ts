@@ -48,3 +48,18 @@ export {
   validateChallengeCompletionRecord,
   validateChallengeCompletionRecordCollection,
 } from "./validation";
+
+// Challenge Engine — structural behavioral rules CE-001 through CE-007
+export {
+  checkActiveAdherenceLimit,
+  checkDueDay,
+  deriveScoreTier,
+  isTerminalStatus,
+  validateMinimumChallengeSet,
+  ChallengeScoreTier,
+} from "./engine";
+export type {
+  ActiveAdherenceCheckResult,
+  DueDayCheckResult,
+  MinimumChallengeSetResult,
+} from "./engine";

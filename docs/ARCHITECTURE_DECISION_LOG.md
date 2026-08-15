@@ -341,3 +341,38 @@ The analytics signal model (M-004) is intentionally excluded. This module handle
 - `docs/API_IDENTITY_THREAT_MODEL.md` is the canonical threat analysis for this decision.
 
 ---
+
+### ADR-018: Phase 5 — Challenge Engine Structural Service and Protocol Evolution Advisory Wiring
+**Status**: ACCEPTED
+**Date**: 2026-08-15
+**Deciders**: DevOS Orchestrator under founder-authorized autonomous engineering execution
+
+**Context**: Phase 4 completed the persistence layer (Prisma-backed repositories, server entry point, ADR-017 tenant-identity boundary). Phase 5 identified two remaining implementation gaps: (1) the Challenge Engine had structural lifecycle types, schema, and validation but no service layer exposing the public behavioral contract for rules CE-001 through CE-007 as defined in `docs/challenge_engine_specification.md`; (2) the Protocol Evolution advisory role (AGENTS.md, `docs/protocol_evolution_system.md`) had no structural wiring — no advisory types, signal categories, candidate validation, or eligibility checks.
+
+**Decision**: Implement two new source modules:
+
+1. `src/challenge/engine.ts` — Challenge Engine structural service exposing the public behavioral contract (CE-001 through CE-007):
+   - `checkActiveAdherenceLimit()` — CE-001: one active adherence challenge per phase.
+   - `checkDueDay()` — CE-002: due day timeliness determination.
+   - `ChallengeScoreTier` enum + `deriveScoreTier()` — CE-004: public score tier (FullWeight / PartialWeight / ZeroWeight); numeric weighting formula remains moat-protected (M-003).
+   - `validateMinimumChallengeSet()` — CE-005: at least one adherence challenge per phase.
+   - `isTerminalStatus()` — CE-007: terminal state guard.
+   - Re-exports of validation functions from `src/challenge/validation.ts` as the single authoritative engine entry point.
+
+2. `src/protocol/evolution.ts` — Protocol Evolution advisory service (LOW authority, advisory only):
+   - `EvolutionSignalType` enum — four observable signal categories.
+   - `VersionBumpType` enum — patch / minor / major per EV-001.
+   - `EvolutionCandidate` type + `validateEvolutionCandidate()` — structural candidate validation.
+   - `checkProtocolEvolutionEligibility()` — active/deprecated protocols only; draft/completed are ineligible.
+   - `ProtocolRegressionAlert` type + `validateRegressionAlert()` — regression alert validation.
+
+Both modules are gated by M-003/M-004 MOAT NOTICEs. Proprietary rule evaluation, personalization hooks, and adherence weighting formulae remain excluded from all public-facing modules.
+
+**Consequences**:
+- `src/challenge/` is fully implemented: types, schema, validation, engine service, and test coverage (engine.test.ts adds ~35 tests).
+- `src/protocol/` gains an advisory evolution layer; the evolution test suite (evolution.test.ts) adds ~35 tests.
+- No moat-protected logic (M-003 challenge engine rules, M-004 signal methodology, M-002 protocol generation) appears in any new public module.
+- No locked architectural decisions are violated (LOCK-001 through LOCK-005 intact).
+- Phase 5 exit criteria 1–4 are satisfied; criterion 5 (human project lead review) is pending.
+
+---

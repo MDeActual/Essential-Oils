@@ -51,3 +51,19 @@ export {
   validateChallenge,
   validateChallengeCollection,
 } from "./validation";
+
+// Protocol Evolution — advisory service (LOW authority, no autonomous changes)
+export {
+  validateEvolutionCandidate,
+  checkProtocolEvolutionEligibility,
+  validateRegressionAlert,
+  EvolutionSignalType,
+  VersionBumpType,
+} from "./evolution";
+export type {
+  EvolutionCandidate,
+  ProtocolRegressionAlert,
+  EvolutionCandidateValidationError,
+  EvolutionCandidateValidationResult,
+  ProtocolEvolutionEligibilityResult,
+} from "./evolution";
