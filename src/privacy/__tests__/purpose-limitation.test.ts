@@ -4,7 +4,9 @@ import { ConsentRecord, ConsentRepository } from "../types";
 class InMemoryConsentRepository implements ConsentRepository {
   constructor(private readonly consent: ConsentRecord | null) {}
 
-  async findActiveConsent(): Promise<ConsentRecord | null> {
+  async findConsent(
+    _input: Parameters<ConsentRepository["findConsent"]>[0],
+  ): ReturnType<ConsentRepository["findConsent"]> {
     return this.consent;
   }
 }
