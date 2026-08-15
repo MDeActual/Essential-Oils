@@ -63,10 +63,10 @@ Phase 4 introduces the database persistence layer using Prisma. All deliverables
 
 | Deliverable | Status |
 |-------------|--------|
-| `docs/challenge_engine_specification.md` — full Challenge Engine rules and lifecycle spec | ⬜ Pending |
-| `docs/natural_remedy_ontology.md` — extended oil ontology with therapeutic categories | ⬜ Pending |
-| `docs/protocol_evolution_system.md` — protocol iteration and evolution rules | ⬜ Pending |
-| `docs/synthetic_simulation_specification.md` — simulation data isolation and generation rules | ⬜ Pending |
+| `docs/challenge_engine_specification.md` — full Challenge Engine rules and lifecycle spec | ✅ Complete |
+| `docs/natural_remedy_ontology.md` — extended oil ontology with therapeutic categories | ✅ Complete |
+| `docs/protocol_evolution_system.md` — protocol iteration and evolution rules | ✅ Complete |
+| `docs/synthetic_simulation_specification.md` — simulation data isolation and generation rules | ✅ Complete |
 | Challenge Engine implementation in `src/challenge/` (if not already complete — verify) | ⬜ Pending |
 | Protocol Evolution agent wiring (advisory only; no autonomous commit rights) | ⬜ Pending |
 | Phase 5 ADR entry in `docs/ARCHITECTURE_DECISION_LOG.md` | ⬜ Pending |

@@ -56,10 +56,10 @@ The following docs are missing and are the primary deliverables for Phase 5:
 
 | Gap | Phase 5 Target File | Status |
 |-----|---------------------|--------|
-| Natural remedy ontology | `docs/natural_remedy_ontology.md` | ⬜ Pending |
-| Challenge Engine specification | `docs/challenge_engine_specification.md` | ⬜ Pending |
-| Protocol evolution system | `docs/protocol_evolution_system.md` | ⬜ Pending |
-| Synthetic simulation specification | `docs/synthetic_simulation_specification.md` | ⬜ Pending |
+| Natural remedy ontology | `docs/natural_remedy_ontology.md` | ✅ Complete |
+| Challenge Engine specification | `docs/challenge_engine_specification.md` | ✅ Complete |
+| Protocol evolution system | `docs/protocol_evolution_system.md` | ✅ Complete |
+| Synthetic simulation specification | `docs/synthetic_simulation_specification.md` | ✅ Complete |
 
 These must be completed before source module implementation for Phase 5 begins. The orchestrator reading order references all four.
 
