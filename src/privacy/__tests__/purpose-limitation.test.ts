@@ -82,4 +82,19 @@ describe("PurposeLimitationService", () => {
       }),
     ).resolves.toEqual({ allowed: false, reason: "tenant_mismatch" });
   });
+
+  it("denies cross-subject consent reuse", async () => {
+    const service = new PurposeLimitationService(
+      new InMemoryConsentRepository(baseConsent),
+    );
+
+    await expect(
+      service.authorize({
+        tenantId: "tenant-a",
+        subjectId: "subject-2",
+        purpose: "personalized_guidance",
+        classification: "wellness_sensitive",
+      }),
+    ).resolves.toEqual({ allowed: false, reason: "subject_mismatch" });
+  });
 });
