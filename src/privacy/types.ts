@@ -41,7 +41,7 @@ export interface ProcessingDecision {
 }
 
 export interface ConsentRepository {
-  findActiveConsent(input: {
+  findConsent(input: {
     tenantId: string;
     subjectId: string;
     purpose: ProcessingPurpose;
