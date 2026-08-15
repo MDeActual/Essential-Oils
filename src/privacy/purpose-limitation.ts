@@ -19,7 +19,7 @@ export class PurposeLimitationService {
       return { allowed: true, reason: "allowed" };
     }
 
-    const consent = await this.consentRepository.findActiveConsent({
+    const consent = await this.consentRepository.findConsent({
       tenantId: request.tenantId,
       subjectId: request.subjectId,
       purpose: request.purpose,
