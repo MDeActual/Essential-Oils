@@ -109,29 +109,49 @@ This is expected behavior — migration status cannot be determined without a co
 
 All P0 and P1 items are resolved in this audit commit.
 
-For full database verification (P2), deploy to a staging environment with a PostgreSQL instance:
+For full database verification (P2), provision a free PostgreSQL instance (Supabase, Railway, Neon, or Render all have free tiers) and run:
 
 ```bash
-export DATABASE_URL="******host:5432/phytoai"
+# 1. Set your connection string
+export DATABASE_URL="******HOST:5432/phytoai"
+
+# 2. Apply migrations
 npx prisma migrate deploy
-npm run generate
+
+# 3. Regenerate Prisma client (if needed)
+npm run build
+
+# 4. Seed the database
 npx prisma db seed
+
+# 5. Start the server
 npm start
 ```
 
-Then verify endpoints manually:
+Then verify endpoints manually (DB-backed mode):
 ```bash
 curl http://localhost:3000/health
+# Expected: { "status": "ok" }
+
 curl http://localhost:3000/protocols
+# Expected: array of protocol objects
+
 curl http://localhost:3000/analytics/protocols
+# Expected: analytics summary with real_contributor data only
 ```
+
+**Free PostgreSQL options:**
+- [Supabase](https://supabase.com) — free tier, instant provisioning, connection string under Settings → Database
+- [Neon](https://neon.tech) — serverless Postgres, free tier
+- [Railway](https://railway.app) — free trial with Postgres plugin
+- [Render](https://render.com) — free Postgres (expires after 90 days on free tier)
 
 ---
 
 ## Launch Readiness Verdict
 
-**Status: LAUNCH READY (with staging DB verification pending)**
+**Status: LAUNCH READY (with staging DB verification pending — human action required)**
 
-All build, TypeScript, test, and schema checks pass. The API runs correctly against in-memory data without a database configured. The only remaining step before production launch is running `prisma migrate deploy` + `prisma db seed` against a live PostgreSQL instance and verifying the five endpoints respond correctly in DB-backed mode.
+All build, TypeScript, test, and schema checks pass. The API runs correctly against in-memory data without a database configured. The only remaining step before production launch is running `prisma migrate deploy` + `prisma db seed` against a live PostgreSQL instance and verifying the five endpoints respond correctly in DB-backed mode (see Recommended Fixes above for step-by-step instructions and free DB options).
 
-The platform satisfies all Phase 4 exit criteria except the human project lead review (criterion 8), which must be completed before merging to production.
+Phase 4 has been reviewed and accepted by the human project lead (2026-08-14). Phase 5 is now active.

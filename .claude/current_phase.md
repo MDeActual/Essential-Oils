@@ -3,15 +3,15 @@
 ## Current Phase
 
 **Phase**: 4 — Persistence and Data Integrity Layer
-**Status**: COMPLETE (pending human project lead review — exit criterion #8)
+**Status**: ✅ COMPLETE — reviewed and accepted by human project lead (2026-08-14)
 **Started**: 2026-04-12
-**Target Completion**: TBD (awaiting human review + staging DB verification)
+**Completed**: 2026-08-14
 
 ---
 
 ## Phase Description
 
-Phase 4 introduces the database persistence layer using Prisma. All deliverables are complete: Prisma schema, repository interfaces, Prisma-backed implementations, migration scripts, API controller wiring, runtime entry point (`src/index.ts`), and governance docs. The API runs in-memory-fallback mode without `DATABASE_URL`, and full Prisma-backed mode when connected to PostgreSQL. The full automated test suite passes. Awaiting human project lead review (exit criterion #8) and staging DB verification before production launch.
+Phase 4 introduces the database persistence layer using Prisma. All deliverables are complete: Prisma schema, repository interfaces, Prisma-backed implementations, migration scripts, API controller wiring, runtime entry point (`src/index.ts`), and governance docs. The API runs in-memory-fallback mode without `DATABASE_URL`, and full Prisma-backed mode when connected to PostgreSQL. The full automated test suite passes. Human project lead review accepted on 2026-08-14. Remaining P2 item: staging DB verification (run `prisma migrate deploy` + endpoint smoke tests against a live PostgreSQL instance).
 
 ---
 
@@ -49,7 +49,36 @@ Phase 4 introduces the database persistence layer using Prisma. All deliverables
 5. No existing API routes/controllers modified. ✅
 6. No auth changes. ✅
 7. The full automated test suite passes. ✅
-8. Human project lead has reviewed Phase 4 slice. ⬜ (pending)
+8. Human project lead has reviewed Phase 4 slice. ✅ — accepted 2026-08-14
+
+---
+
+## Phase 5 — Challenge Engine and Missing Governance Docs
+
+**Status**: ACTIVE
+**Started**: 2026-08-14
+**Goal**: Fill the known documentation gaps identified in `project_context.md`, then implement the Challenge Engine as the next core domain module.
+
+### Phase 5 Deliverables
+
+| Deliverable | Status |
+|-------------|--------|
+| `docs/challenge_engine_specification.md` — full Challenge Engine rules and lifecycle spec | ✅ Complete |
+| `docs/natural_remedy_ontology.md` — extended oil ontology with therapeutic categories | ✅ Complete |
+| `docs/protocol_evolution_system.md` — protocol iteration and evolution rules | ✅ Complete |
+| `docs/synthetic_simulation_specification.md` — simulation data isolation and generation rules | ✅ Complete |
+| Challenge Engine implementation in `src/challenge/` (if not already complete — verify) | ⬜ Pending |
+| Protocol Evolution agent wiring (advisory only; no autonomous commit rights) | ⬜ Pending |
+| Phase 5 ADR entry in `docs/ARCHITECTURE_DECISION_LOG.md` | ⬜ Pending |
+| Update `docs/ARCHITECTURE_INDEX.md` with any new files | ⬜ Pending |
+
+### Phase 5 Exit Criteria
+
+1. All four missing governance docs exist and are substantive (not stubs).
+2. Challenge Engine spec is complete and references domain model correctly.
+3. Any new source modules pass the full test suite.
+4. No locked architectural decisions are violated.
+5. Human project lead reviews and accepts Phase 5 deliverables.
 
 ---
 
@@ -61,4 +90,5 @@ Phase 4 introduces the database persistence layer using Prisma. All deliverables
 | 1 | Core Domain Implementation | ✅ Complete | 2026-04-11 |
 | 2 | Intelligence Layer (Contributor Analytics) | ✅ Complete | 2026-04-11 |
 | 3 | External API Layer | ✅ Complete | 2026-04-12 |
-| 4 | Persistence and Data Integrity Layer | COMPLETE (pending review) | — |
+| 4 | Persistence and Data Integrity Layer | ✅ Complete | 2026-08-14 |
+| 5 | Challenge Engine and Governance Doc Completion | 🟡 Active | — |

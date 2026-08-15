@@ -12,7 +12,7 @@
 
 **Architecture Package Version**: v11 CANONICAL
 **Governance Layer**: Architecture Control Layer v1.0 (established 2026-04-10)
-**Development Status**: Phase 4 in progress — Prisma persistence layer added; Prisma-backed repository implementations complete; API controllers wired to use Prisma repositories when `DATABASE_URL` is set (in-memory fallback retained for dev/test without a DB).
+**Development Status**: Phase 4 complete (reviewed and accepted by human project lead 2026-08-14). Phase 5 active — Challenge Engine specification and missing governance docs.
 
 ---
 
@@ -50,10 +50,18 @@
 
 ---
 
-## Known Gaps (from Architecture Review)
+## Known Gaps (from Architecture Review) — Phase 5 Targets
 
-- `docs/` lacks: `natural_remedy_ontology.md`, `challenge_engine_specification.md`, `protocol_evolution_system.md`, and synthetic simulation specification documents — even though the orchestrator reading order references them.
-- These gaps should be addressed in the next architecture phase before source module implementation begins.
+The following docs are missing and are the primary deliverables for Phase 5:
+
+| Gap | Phase 5 Target File | Status |
+|-----|---------------------|--------|
+| Natural remedy ontology | `docs/natural_remedy_ontology.md` | ✅ Complete |
+| Challenge Engine specification | `docs/challenge_engine_specification.md` | ✅ Complete |
+| Protocol evolution system | `docs/protocol_evolution_system.md` | ✅ Complete |
+| Synthetic simulation specification | `docs/synthetic_simulation_specification.md` | ✅ Complete |
+
+These must be completed before source module implementation for Phase 5 begins. The orchestrator reading order references all four.
 
 ---
 
