@@ -1,10 +1,11 @@
 import {
   ConsentRepository,
   ProcessingDecision,
+  ProcessingPurpose,
   ProcessingRequest,
 } from "./types";
 
-const CONSENT_REQUIRED_PURPOSES = new Set([
+const CONSENT_REQUIRED_PURPOSES = new Set<ProcessingPurpose>([
   "personalized_guidance",
   "safety_monitoring",
   "product_improvement",
