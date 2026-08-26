@@ -4,6 +4,8 @@
 
 This document defines all agent roles operating within the Phyto.ai protocol intelligence platform, their responsibilities, authority levels, and inter-agent communication contracts.
 
+The canonical rules for accepted project state, authorization, rejection, conflict handling, and mandatory agent preflight are defined in `docs/PROJECT_STATE_GOVERNANCE.md`. When this file and that governance contract appear to conflict, the governance contract controls the state/authorization question.
+
 ---
 
 ## Agent Taxonomy
@@ -51,7 +53,7 @@ This document defines all agent roles operating within the Phyto.ai protocol int
 - **Authority Level**: HIGH — governs agent sequencing; reports to human project lead.
 - **Inputs**: All agent outputs, architecture index, current phase.
 - **Outputs**: Unified task queue, conflict resolution logs.
-- **Constraints**: Must enforce `CLAUDE.md` behavioral constraints across all sub-agents.
+- **Constraints**: Must enforce `CLAUDE.md` behavioral constraints across all sub-agents and must enforce the project-state preflight in `docs/PROJECT_STATE_GOVERNANCE.md`.
 
 ---
 
@@ -67,16 +69,20 @@ This document defines all agent roles operating within the Phyto.ai protocol int
 | Swarm Orchestrator          | ✅             | ✅              | ✅ (with ADR)  | ❌                  |
 | Human Project Lead          | ✅             | ✅              | ✅             | ✅                  |
 
+The matrix does not override the canonical project-state rules. An agent with commit authority may commit only within explicitly authorized scope and may not convert proposed work into accepted project state without the required acceptance gate.
+
 ---
 
 ## Inter-Agent Communication Contract
 
 - All agent outputs are typed JSON objects with a required `agent_id`, `timestamp`, `version`, and `payload` field.
 - Agents must not directly invoke each other; all coordination routes through the Swarm Orchestrator.
-- Conflict resolution follows the precedence order: Human Lead > Swarm Orchestrator > Domain Agents.
+- Conflict resolution follows the precedence order: Human Lead > Swarm Orchestrator > Domain Agents, subject to the canonical project-state rules.
+- When authority, scope, or project-state guidance is ambiguous, the agent must stop and escalate rather than infer permission.
 
 ---
 
 ## Swarm Execution Rules
 
 See `docs/swarm_rules.md` for full data integrity and execution rules governing multi-agent analytics workflows.
+See `docs/PROJECT_STATE_GOVERNANCE.md` for the mandatory project-state and authorization preflight.
