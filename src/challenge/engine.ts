@@ -40,6 +40,7 @@ export interface ChallengeRuleContext {
   phaseIndex?: number;
   protocolId?: string;
   userId?: string;
+  protocolStartAt?: string;
 }
 
 export interface ChallengeEngineResult {
@@ -91,7 +92,8 @@ export function sumChallengeAdherenceContribution(
 
 export function evaluateChallengeTimeliness(
   challenge: Pick<Challenge, "challengeId" | "dueDay" | "completionStatus" | "response">,
-  completedAt?: string
+  completedAt?: string,
+  protocolStartAt?: string
 ): ChallengeTimelinessResult {
   const issues: ChallengeEngineIssue[] = [];
 
@@ -124,8 +126,38 @@ export function evaluateChallengeTimeliness(
     };
   }
 
-  const dueDate = new Date();
-  dueDate.setUTCDate(dueDate.getUTCDate() + Math.max(0, challenge.dueDay - 1));
+  if (!protocolStartAt) {
+    issues.push({
+      code: "CE-002",
+      challengeId: challenge.challengeId,
+      field: "protocolStartAt",
+      message: "A protocol start timestamp is required to compute due-day timeliness.",
+    });
+    return {
+      valid: false,
+      wasTimely: false,
+      issues,
+    };
+  }
+
+  const protocolStartDate = new Date(protocolStartAt);
+  if (Number.isNaN(protocolStartDate.getTime())) {
+    issues.push({
+      code: "CE-002",
+      challengeId: challenge.challengeId,
+      field: "protocolStartAt",
+      message: "Protocol start timestamp must be a valid ISO 8601 date.",
+    });
+    return {
+      valid: false,
+      wasTimely: false,
+      issues,
+    };
+  }
+
+  const dueDate = new Date(protocolStartDate);
+  dueDate.setUTCDate(protocolStartDate.getUTCDate() + Math.max(0, challenge.dueDay - 1));
+  dueDate.setUTCHours(23, 59, 59, 999);
 
   const completedAtDate = new Date(completedAt);
   const wasTimely = Number.isFinite(completedAtDate.getTime())
@@ -237,7 +269,14 @@ export function evaluateChallengeRules(
       });
     }
 
-    const timeliness = evaluateChallengeTimeliness(challenge);
+    const completionRecord = completionRecords.find(
+      (record) => record.challengeId === challenge.challengeId
+    );
+    const timeliness = evaluateChallengeTimeliness(
+      challenge,
+      completionRecord?.completedAt,
+      context.protocolStartAt
+    );
     if (!timeliness.valid) {
       issues.push(...timeliness.issues);
     }

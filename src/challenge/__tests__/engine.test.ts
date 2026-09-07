@@ -108,14 +108,35 @@ describe("challenge engine internal rules", () => {
     ).toBe(0);
   });
 
-  it("detects late or invalid dueDay values", () => {
+  it("detects late or invalid dueDay values relative to protocol start", () => {
     const result = evaluateChallengeTimeliness(
-      makeChallenge({ challengeId: "due-check", dueDay: 0, completionStatus: ChallengeCompletionStatus.Pending }),
-      "2026-04-12T01:00:00Z"
+      makeChallenge({
+        challengeId: "due-check",
+        dueDay: 0,
+        completionStatus: ChallengeCompletionStatus.Pending,
+      }),
+      "2026-04-12T01:00:00Z",
+      "2026-04-10T00:00:00Z"
     );
 
     expect(result.valid).toBe(false);
     expect(result.issues.some((issue) => issue.code === "CE-002")).toBe(true);
+  });
+
+  it("uses protocolStartAt to determine timeliness instead of wall-clock now", () => {
+    const result = evaluateChallengeTimeliness(
+      makeChallenge({
+        challengeId: "timely-check",
+        dueDay: 2,
+        completionStatus: ChallengeCompletionStatus.Completed,
+        response: "done",
+      }),
+      "2026-04-11T12:00:00Z",
+      "2026-04-10T00:00:00Z"
+    );
+
+    expect(result.valid).toBe(true);
+    expect(result.wasTimely).toBe(true);
   });
 
   it("canPresentChallenge blocks presentation when an adherence challenge is already active", () => {
