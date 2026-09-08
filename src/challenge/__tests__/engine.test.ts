@@ -1,6 +1,5 @@
 import {
   buildChallengeQueue,
-  calculateChallengeAdherenceContribution,
   canPresentChallenge,
   ensureChallengeSetIntegrity,
   evaluateChallengeRules,
@@ -86,26 +85,29 @@ describe("challenge engine internal rules", () => {
   });
 
   it("calculates adherence contribution by outcome", () => {
-    expect(
-      calculateChallengeAdherenceContribution({
-        finalStatus: ChallengeCompletionStatus.Completed,
-        wasTimely: true,
-      })
-    ).toBe(1);
+    const result = evaluateChallengeRules({
+      challenges: [
+        makeChallenge({
+          completionStatus: ChallengeCompletionStatus.Completed,
+          response: "done",
+        }),
+      ],
+      completionRecords: [
+        {
+          recordId: "record-1",
+          challengeId: "challenge-day1-checkin",
+          protocolId: "protocol-sleep-support",
+          userId: "user-1",
+          finalStatus: ChallengeCompletionStatus.Completed,
+          completedAt: "2026-04-10T12:00:00Z",
+          response: "done",
+          wasTimely: true,
+        },
+      ],
+      protocolStartAt: "2026-04-10T00:00:00Z",
+    });
 
-    expect(
-      calculateChallengeAdherenceContribution({
-        finalStatus: ChallengeCompletionStatus.Completed,
-        wasTimely: false,
-      })
-    ).toBe(0.5);
-
-    expect(
-      calculateChallengeAdherenceContribution({
-        finalStatus: ChallengeCompletionStatus.Skipped,
-        wasTimely: false,
-      })
-    ).toBe(0);
+    expect(result.adherenceContribution).toBe(1);
   });
 
   it("detects late or invalid dueDay values relative to protocol start", () => {

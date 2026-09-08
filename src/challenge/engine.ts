@@ -10,11 +10,9 @@
  * The proprietary assessment heuristics remain internal to this module.
  */
 
-import {
-  CHALLENGE_RESPONSE_MAX_LENGTH,
-  CHALLENGE_SKIP_REASON_MAX_LENGTH,
-} from "./schema";
+import { CHALLENGE_RESPONSE_MAX_LENGTH } from "./schema";
 import type { ChallengeCompletionRecord } from "./types";
+import { validateChallengeCompletionRecordCollection } from "./validation";
 import { ChallengeCompletionStatus, ChallengeType } from "../protocol/types";
 import type { Challenge } from "../protocol/types";
 
@@ -68,7 +66,7 @@ export function isChallengeTerminal(status: ChallengeCompletionStatus): boolean 
   );
 }
 
-export function calculateChallengeAdherenceContribution(
+function calculateChallengeAdherenceContribution(
   completion: Pick<ChallengeCompletionRecord, "finalStatus" | "wasTimely">
 ): number {
   switch (completion.finalStatus) {
@@ -81,7 +79,7 @@ export function calculateChallengeAdherenceContribution(
   }
 }
 
-export function sumChallengeAdherenceContribution(
+function sumChallengeAdherenceContribution(
   completionRecords: ChallengeCompletionRecord[] = []
 ): number {
   return completionRecords.reduce(
@@ -180,7 +178,7 @@ export function evaluateChallengeTimeliness(
   };
 }
 
-export function validateChallengeTransitionHistory(
+export function validateTerminalChallengeState(
   challenges: Challenge[]
 ): ChallengeEngineIssue[] {
   const issues: ChallengeEngineIssue[] = [];
@@ -218,7 +216,7 @@ export function evaluateChallengeRules(
   context: ChallengeRuleContext
 ): ChallengeEngineResult {
   const issues: ChallengeEngineIssue[] = [];
-  const { challenges, completionRecords = [], protocolId, userId } = context;
+  const { challenges, completionRecords = [] } = context;
 
   const activeAdherenceChallenges = challenges.filter(
     (challenge) =>
@@ -291,52 +289,27 @@ export function evaluateChallengeRules(
     }
   }
 
-  for (const record of completionRecords) {
-    if (record.finalStatus === ChallengeCompletionStatus.Completed) {
-      if (
-        record.response === undefined ||
-        record.response === null ||
-        record.response.trim().length === 0
-      ) {
-        issues.push({
-          code: "CE-003",
-          challengeId: record.challengeId,
-          field: "response",
-          message: "Completed challenge records require a non-empty response.",
-        });
-      }
-    }
+  const completionValidation = validateChallengeCompletionRecordCollection(completionRecords);
+  issues.push(
+    ...completionValidation.errors.map((error) => ({
+      code:
+        (error.field === "response" || error.field === "skipReason") &&
+        error.message.includes("exceed")
+          ? ("CE-006" as const)
+          : ("CE-003" as const),
+      challengeId: completionRecords.find((record) => record.recordId === error.recordId)
+        ?.challengeId,
+      field: error.field,
+      message: error.message,
+    }))
+  );
 
-    if (
-      record.finalStatus === ChallengeCompletionStatus.Skipped &&
-      record.response !== undefined &&
-      record.response !== null &&
-      record.response.trim().length > 0
-    ) {
-      issues.push({
-        code: "CE-003",
-        challengeId: record.challengeId,
-        field: "response",
-        message: "Skipped challenge records may not carry a response payload.",
-      });
-    }
-
-    if (record.skipReason && record.skipReason.length > CHALLENGE_SKIP_REASON_MAX_LENGTH) {
-      issues.push({
-        code: "CE-006",
-        challengeId: record.challengeId,
-        field: "skipReason",
-        message: `Skip reason length exceeds the maximum of ${CHALLENGE_SKIP_REASON_MAX_LENGTH} characters.`,
-      });
-    }
-  }
-
-  const transitionIssues = validateChallengeTransitionHistory(challenges);
+  const transitionIssues = validateTerminalChallengeState(challenges);
   issues.push(...transitionIssues);
 
   const eligibleChallenges = challenges.filter((challenge) => {
     if (challenge.type === ChallengeType.Adherence) {
-      return challenge.completionStatus !== ChallengeCompletionStatus.Completed;
+      return challenge.completionStatus === ChallengeCompletionStatus.Pending;
     }
     return challenge.completionStatus === ChallengeCompletionStatus.Pending;
   });
@@ -350,10 +323,6 @@ export function evaluateChallengeRules(
     eligibleChallenges,
     adherenceContribution,
   };
-
-  if (protocolId || userId) {
-    result.issues = result.issues.filter((issue) => issue.challengeId !== undefined || !issue.challengeId);
-  }
 
   return result;
 }
