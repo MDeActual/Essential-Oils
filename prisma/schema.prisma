@@ -10,6 +10,7 @@
 //   LOCK-003: dataOrigin and exclusionStatus are required on every Contributor row.
 //   LOCK-005: Protocol.version follows semantic versioning (enforced in application layer).
 //   ADR-017: Every user-owned row carries tenantId and tenant-matched relations.
+//   ADR-018: Privacy records are tenant/subject scoped and fail closed at the service layer.
 //
 // Connection is configured via prisma.config.ts (Prisma 7 config-based approach).
 
@@ -70,12 +71,48 @@ enum BlendSafetyStatus {
   REJECTED  @map("rejected")
 }
 
+enum PrivacyPurpose {
+  PROTOCOL_DELIVERY       @map("protocol_delivery")
+  OUTCOME_TRACKING        @map("outcome_tracking")
+  SAFETY_MONITORING       @map("safety_monitoring")
+  SUBJECT_EXPORT          @map("subject_export")
+  SUBJECT_DELETION        @map("subject_deletion")
+  DEIDENTIFIED_ANALYTICS  @map("deidentified_analytics")
+}
+
+enum PrivacyDataClassification {
+  IDENTITY_REFERENCE  @map("identity_reference")
+  WELLNESS_SENSITIVE  @map("wellness_sensitive")
+  PROTOCOL            @map("protocol")
+  OUTCOME             @map("outcome")
+  CONSENT             @map("consent")
+  AUDIT_METADATA      @map("audit_metadata")
+}
+
+enum PrivacyRequestStatus {
+  REQUESTED  @map("requested")
+  BLOCKED    @map("blocked")
+  COMPLETED  @map("completed")
+  FAILED     @map("failed")
+}
+
+enum PrivacyAuditAction {
+  CONSENT_GRANTED       @map("consent_granted")
+  CONSENT_REVOKED       @map("consent_revoked")
+  PURPOSE_DENIED        @map("purpose_denied")
+  DELETION_REQUESTED    @map("deletion_requested")
+  DELETION_BLOCKED      @map("deletion_blocked")
+  DELETION_COMPLETED    @map("deletion_completed")
+  EXPORT_REQUESTED      @map("export_requested")
+  EXPORT_COMPLETED      @map("export_completed")
+  RETENTION_EVALUATED   @map("retention_evaluated")
+  LEGAL_HOLD_APPLIED    @map("legal_hold_applied")
+  LEGAL_HOLD_RELEASED   @map("legal_hold_released")
+}
+
 model Contributor {
   id String @id @default(cuid())
-
-  /// Security boundary. Every contributor row belongs to exactly one tenant.
   tenantId String @map("tenant_id")
-
   recordId String @map("record_id")
   userId String @map("user_id")
   protocolId String @map("protocol_id")
@@ -98,10 +135,7 @@ model Contributor {
 
 model Protocol {
   id String @id @default(cuid())
-
-  /// Security boundary. Every protocol belongs to exactly one tenant.
   tenantId String @map("tenant_id")
-
   protocolId String @map("protocol_id")
   version String
   userProfileId String @map("user_profile_id")
@@ -123,10 +157,7 @@ model Protocol {
 
 model Challenge {
   id String @id @default(cuid())
-
-  /// Security boundary inherited from and constrained to the parent protocol.
   tenantId String @map("tenant_id")
-
   challengeId String @map("challenge_id")
   protocolId String @map("protocol_id")
   type ChallengeType
@@ -145,7 +176,6 @@ model Challenge {
   @@map("challenges")
 }
 
-/// Blend is a global curated product catalog record rather than a user-owned row.
 model Blend {
   id String @id @default(cuid())
   blendId String @unique @map("blend_id")
@@ -165,10 +195,7 @@ model Blend {
 
 model OutcomeLog {
   id String @id @default(cuid())
-
-  /// Security boundary inherited from and constrained to the contributor.
   tenantId String @map("tenant_id")
-
   contributorId String @map("contributor_id")
   protocolId String @map("protocol_id")
   notes String
@@ -181,4 +208,106 @@ model OutcomeLog {
   @@index([tenantId, contributorId])
   @@index([tenantId, protocolId])
   @@map("outcome_logs")
+}
+
+model ConsentGrant {
+  id String @id @default(cuid())
+  tenantId String @map("tenant_id")
+  subjectId String @map("subject_id")
+  purpose PrivacyPurpose
+  noticeVersion String @map("notice_version")
+  grantedAt DateTime @map("granted_at")
+  revokedAt DateTime? @map("revoked_at")
+  expiresAt DateTime? @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([tenantId, subjectId, purpose, noticeVersion, grantedAt])
+  @@index([tenantId, subjectId, purpose])
+  @@index([tenantId, subjectId, revokedAt, expiresAt])
+  @@map("consent_grants")
+}
+
+model RetentionPolicy {
+  id String @id @default(cuid())
+  tenantId String @map("tenant_id")
+  classification PrivacyDataClassification
+  retentionDays Int @map("retention_days")
+  policyVersion String @map("policy_version")
+  active Boolean @default(true)
+  effectiveAt DateTime @map("effective_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([tenantId, classification, policyVersion])
+  @@index([tenantId, classification, active, effectiveAt])
+  @@map("retention_policies")
+}
+
+model LegalHold {
+  id String @id @default(cuid())
+  tenantId String @map("tenant_id")
+  subjectId String @map("subject_id")
+  holdRef String @map("hold_ref")
+  active Boolean @default(true)
+  startsAt DateTime @map("starts_at")
+  endsAt DateTime? @map("ends_at")
+  reasonCode String @map("reason_code")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([tenantId, holdRef])
+  @@index([tenantId, subjectId, active, startsAt, endsAt])
+  @@map("legal_holds")
+}
+
+model DeletionRequest {
+  id String @id @default(cuid())
+  tenantId String @map("tenant_id")
+  subjectId String @map("subject_id")
+  requestId String @map("request_id")
+  status PrivacyRequestStatus @default(REQUESTED)
+  requestedAt DateTime @map("requested_at")
+  completedAt DateTime? @map("completed_at")
+  decisionCode String? @map("decision_code")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([tenantId, requestId])
+  @@index([tenantId, subjectId, requestedAt])
+  @@map("deletion_requests")
+}
+
+model ExportRequest {
+  id String @id @default(cuid())
+  tenantId String @map("tenant_id")
+  subjectId String @map("subject_id")
+  requestId String @map("request_id")
+  status PrivacyRequestStatus @default(REQUESTED)
+  requestedAt DateTime @map("requested_at")
+  completedAt DateTime? @map("completed_at")
+  recordCount Int? @map("record_count")
+  payloadBytes Int? @map("payload_bytes")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([tenantId, requestId])
+  @@index([tenantId, subjectId, requestedAt])
+  @@map("export_requests")
+}
+
+model PrivacyAuditEvent {
+  id String @id @default(cuid())
+  tenantId String @map("tenant_id")
+  subjectId String? @map("subject_id")
+  action PrivacyAuditAction
+  decisionCode String @map("decision_code")
+  policyRef String? @map("policy_ref")
+  requestRef String? @map("request_ref")
+  occurredAt DateTime @map("occurred_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId, subjectId, occurredAt])
+  @@index([tenantId, action, occurredAt])
+  @@map("privacy_audit_events")
 }
