@@ -55,16 +55,17 @@ The verified sequence is:
 1. Provision or select a PostgreSQL staging database.
 2. Set DATABASE_URL for the staging environment.
 3. Run: npx prisma migrate deploy
-4. Run the repository's database seed workflow.
-5. Start the application in DB-backed mode.
-6. Verify:
+4. Run: npm run generate
+5. Run: npx prisma db seed
+6. Start the application in DB-backed mode.
+7. Verify:
    - GET /health
    - GET /protocols
    - GET /protocols/:id
    - GET /analytics/protocols
    - GET /analytics/protocols/:id
-7. Record results.
-8. Founder reviews and accepts/rejects the Phase 4 / V1 backend baseline.
+8. Record results.
+9. Founder reviews and accepts/rejects the Phase 4 / V1 backend baseline.
 ```
 
 ### Why This Matters
