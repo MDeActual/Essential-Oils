@@ -61,5 +61,12 @@
   "dependencies": {
     "@prisma/client": "^7.7.0",
     "express": "^5.2.1"
+  },
+  "overrides": {
+    "deepmerge-ts": "^8.0.2",
+    "mysql2": "^3.24.5",
+    "proxy-addr": "^2.0.8",
+    "fast-uri": "3.1.8",
+    "hono": "4.13.13"
   }
 }
