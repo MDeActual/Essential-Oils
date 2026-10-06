@@ -1,4 +1,4 @@
-import { IContributorRepository } from "../../db/repositories/contributorRepository";
+import type { IContributorRepository } from "../../db/repositories/contributorRepository";
 import { DataOrigin } from "../../analytics/types";
 import { runProtocolSegmentPipeline } from "../../analytics/pipeline";
 import {
@@ -8,7 +8,12 @@ import {
 } from "../types";
 
 export class AnalyticsService {
-  constructor(private readonly contributorRepository: IContributorRepository) {}
+  constructor(
+    private readonly contributorRepository: Pick<
+      IContributorRepository,
+      "findByDataOrigin"
+    >
+  ) {}
 
   async listProtocolAnalytics(): Promise<AnalyticsProtocolsPayload> {
     // LOCK-003: only real contributors are analytics eligible.

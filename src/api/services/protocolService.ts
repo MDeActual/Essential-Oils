@@ -1,14 +1,18 @@
 import { ProtocolStatus } from "../../protocol/types";
-import { IProtocolRepository } from "../../db/repositories/protocolRepository";
+import type { IProtocolRepository } from "../../db/repositories/protocolRepository";
 import { ProtocolDetail, ProtocolPhaseDetail, ProtocolSummary } from "../types";
 
 export class ProtocolService {
-  constructor(private readonly protocolRepository: IProtocolRepository) {}
+  constructor(
+    private readonly protocolRepository: Pick<
+      IProtocolRepository,
+      "findById" | "findByStatus"
+    >
+  ) {}
 
   async listProtocols(): Promise<ProtocolSummary[]> {
     const result = await this.protocolRepository.findByStatus(ProtocolStatus.Active);
-    // API is read-only and currently exposes only seeded protocols; include all statuses by fetching DRAFT/ACTIVE/COMPLETED/DEPRECATED.
-    // To preserve existing behavior (list includes protocol-002 draft), we union all statuses.
+    // Include all statuses consistently across database and memory storage.
     const drafts = await this.protocolRepository.findByStatus(ProtocolStatus.Draft);
     const completed = await this.protocolRepository.findByStatus(ProtocolStatus.Completed);
     const deprecated = await this.protocolRepository.findByStatus(ProtocolStatus.Deprecated);

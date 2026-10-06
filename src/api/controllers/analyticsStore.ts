@@ -4,6 +4,8 @@ import {
   ExclusionReason,
   ExclusionStatus,
 } from "../../analytics/types";
+import type { IContributorRepository } from "../../db/repositories/contributorRepository";
+import type { PaginationOptions, PagedResult } from "../../db/types";
 import { LOCAL_DEVELOPMENT_TENANT_ID, validateTenantId } from "../../db/tenant";
 
 const CONTRIBUTOR_REGISTRY: ContributorRecord[] = [
@@ -56,4 +58,31 @@ export function getAllContributorRecords(
   return validateTenantId(tenantId) === LOCAL_DEVELOPMENT_TENANT_ID
     ? CONTRIBUTOR_REGISTRY
     : [];
+}
+
+export class MemoryContributorRepository
+  implements Pick<IContributorRepository, "findByDataOrigin">
+{
+  private readonly tenantId: string;
+
+  constructor(tenantId: string = LOCAL_DEVELOPMENT_TENANT_ID) {
+    this.tenantId = validateTenantId(tenantId);
+  }
+
+  async findByDataOrigin(
+    origin: DataOrigin,
+    pagination?: PaginationOptions
+  ): Promise<PagedResult<ContributorRecord>> {
+    const matches = getAllContributorRecords(this.tenantId).filter(
+      (record) => record.dataOrigin === origin
+    );
+    const offset = pagination?.offset ?? 0;
+    const end =
+      pagination?.limit === undefined ? undefined : offset + pagination.limit;
+
+    return {
+      items: matches.slice(offset, end) as ContributorRecord[],
+      total: matches.length,
+    };
+  }
 }

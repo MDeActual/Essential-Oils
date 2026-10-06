@@ -183,14 +183,15 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `src/api/routes/analytics.ts` | Protected GET /analytics/protocols and GET /analytics/protocols/:id route definitions |
 | `src/api/controllers/healthController.ts` | Liveness and readiness handlers |
 | `src/api/controllers/protocolController.ts` | Tenant-aware protocol list and detail handlers |
-| `src/api/controllers/protocolStore.ts` | Tenant-local in-memory protocol registry for development/test |
+| `src/api/controllers/protocolStore.ts` | Tenant-local protocol fixtures and read-only memory repository for development/test |
 | `src/api/controllers/analyticsController.ts` | Tenant-aware analytics handlers |
-| `src/api/controllers/analyticsStore.ts` | Tenant-local in-memory contributor registry satisfying LOCK-003 |
+| `src/api/controllers/analyticsStore.ts` | Tenant-local contributor fixtures and read-only memory repository satisfying LOCK-003 |
 | `src/api/services/protocolService.ts` | Service layer for protocol read operations; maps repository domain objects to API payloads |
 | `src/api/services/analyticsService.ts` | Service layer for analytics read operations; fetches tenant-scoped contributors and runs segmentation pipeline |
 | `src/api/middleware/errorHandler.ts` | Global Express error-handling middleware; ValidationError (400), NotFoundError (404), fallback (500) |
 | `src/api/middleware/validateId.ts` | Path parameter validation middleware — enforces canonical identifier format |
 | `src/api/__tests__/api.test.ts` | Integration tests for public and product endpoints |
+| `src/api/__tests__/databaseApi.test.ts` | Endpoint integration tests for Prisma-backed repository paths |
 | `src/api/__tests__/authorization.test.ts` | Authentication, permission, tenant-matching, and memory-isolation integration tests |
 | `src/api/__tests__/runtime.test.ts` | Runtime configuration and safe diagnostics tests |
 | `src/api/__tests__/readiness.test.ts` | Liveness, readiness, and forged configuration tests |

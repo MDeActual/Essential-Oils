@@ -1,4 +1,6 @@
 import { Protocol, ProtocolStatus } from "../../protocol/types";
+import type { IProtocolRepository } from "../../db/repositories/protocolRepository";
+import type { PaginationOptions, PagedResult } from "../../db/types";
 import { LOCAL_DEVELOPMENT_TENANT_ID, validateTenantId } from "../../db/tenant";
 
 const PROTOCOL_REGISTRY: Protocol[] = [
@@ -66,4 +68,35 @@ export function getProtocolById(
 ): Readonly<Protocol> | undefined {
   if (validateTenantId(tenantId) !== LOCAL_DEVELOPMENT_TENANT_ID) return undefined;
   return PROTOCOL_REGISTRY.find((protocol) => protocol.protocolId === protocolId);
+}
+
+export class MemoryProtocolRepository
+  implements Pick<IProtocolRepository, "findById" | "findByStatus">
+{
+  private readonly tenantId: string;
+
+  constructor(tenantId: string = LOCAL_DEVELOPMENT_TENANT_ID) {
+    this.tenantId = validateTenantId(tenantId);
+  }
+
+  async findById(protocolId: string): Promise<Protocol | null> {
+    return getProtocolById(protocolId, this.tenantId) ?? null;
+  }
+
+  async findByStatus(
+    status: ProtocolStatus,
+    pagination?: PaginationOptions
+  ): Promise<PagedResult<Protocol>> {
+    const matches = getAllProtocols(this.tenantId).filter(
+      (protocol) => protocol.status === status
+    );
+    const offset = pagination?.offset ?? 0;
+    const end =
+      pagination?.limit === undefined ? undefined : offset + pagination.limit;
+
+    return {
+      items: matches.slice(offset, end) as Protocol[],
+      total: matches.length,
+    };
+  }
 }

@@ -4,11 +4,13 @@ import type { RuntimeConfig } from "../runtime";
 import { tenantIdFromResponse } from "../security/middleware";
 import { ProtocolService } from "../services/protocolService";
 import { ApiSuccessResponse, ProtocolDetail, ProtocolSummary } from "../types";
-import { getAllProtocols, getProtocolById } from "./protocolStore";
+import { MemoryProtocolRepository } from "./protocolStore";
 
-function protocolServiceFor(res: Response, tenantId: string): ProtocolService | null {
+function protocolServiceFor(res: Response, tenantId: string): ProtocolService {
   const config = res.app.locals.runtimeConfig as Readonly<RuntimeConfig>;
-  if (config.storageMode !== "database") return null;
+  if (config.storageMode !== "database") {
+    return new ProtocolService(new MemoryProtocolRepository(tenantId));
+  }
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { PrismaProtocolRepository } = require(
     "../../db/implementations/PrismaProtocolRepository"
@@ -19,19 +21,9 @@ function protocolServiceFor(res: Response, tenantId: string): ProtocolService | 
 export function listProtocols(_req: Request, res: Response, next: NextFunction): void {
   const tenantId = tenantIdFromResponse(res);
   const protocolService = protocolServiceFor(res, tenantId);
-  const serviceCall = protocolService
-    ? protocolService.listProtocols()
-    : Promise.resolve(getAllProtocols(tenantId).map((p) => ({
-        protocolId: p.protocolId,
-        version: p.version,
-        goal: p.goal,
-        durationDays: p.durationDays,
-        status: p.status,
-        phaseCount: p.phases.length,
-        createdAt: p.createdAt,
-      })));
 
-  serviceCall
+  protocolService
+    .listProtocols()
     .then((summaries: ProtocolSummary[]) => {
       const body: ApiSuccessResponse<ProtocolSummary[]> = {
         success: true,
@@ -47,29 +39,9 @@ export function getProtocol(req: Request, res: Response, next: NextFunction): vo
   const id = req.params["id"] as string;
   const tenantId = tenantIdFromResponse(res);
   const protocolService = protocolServiceFor(res, tenantId);
-  const serviceCall = protocolService
-    ? protocolService.getProtocol(id)
-    : Promise.resolve((() => {
-        const protocol = getProtocolById(id, tenantId);
-        if (!protocol) return null;
-        return {
-          protocolId: protocol.protocolId,
-          version: protocol.version,
-          goal: protocol.goal,
-          durationDays: protocol.durationDays,
-          status: protocol.status,
-          phases: protocol.phases.map((phase) => ({
-            phaseIndex: phase.phaseIndex,
-            label: phase.label,
-            durationDays: phase.durationDays,
-            instructions: phase.instructions,
-          })),
-          challengeCount: protocol.challengeIds.length,
-          createdAt: protocol.createdAt,
-        };
-      })());
 
-  serviceCall
+  protocolService
+    .getProtocol(id)
     .then((detail: ProtocolDetail | null) => {
       if (!detail) {
         next(new NotFoundError(`Protocol '${id}' not found.`));
