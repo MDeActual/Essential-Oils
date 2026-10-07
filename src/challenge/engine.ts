@@ -67,11 +67,12 @@ export function isChallengeTerminal(status: ChallengeCompletionStatus): boolean 
 }
 
 function calculateChallengeAdherenceContribution(
-  completion: Pick<ChallengeCompletionRecord, "finalStatus" | "wasTimely">
+  completion: Pick<ChallengeCompletionRecord, "finalStatus">,
+  wasTimely: boolean
 ): number {
   switch (completion.finalStatus) {
     case ChallengeCompletionStatus.Completed:
-      return completion.wasTimely ? 1 : 0.5;
+      return wasTimely ? 1 : 0.5;
     case ChallengeCompletionStatus.Skipped:
       return 0;
     default:
@@ -80,12 +81,23 @@ function calculateChallengeAdherenceContribution(
 }
 
 function sumChallengeAdherenceContribution(
-  completionRecords: ChallengeCompletionRecord[] = []
+  completionRecords: ChallengeCompletionRecord[],
+  challenges: Challenge[],
+  protocolStartAt?: string
 ): number {
-  return completionRecords.reduce(
-    (total, record) => total + calculateChallengeAdherenceContribution(record),
-    0
-  );
+  return completionRecords.reduce((total, record) => {
+    const challenge = challenges.find(
+      (candidate) => candidate.challengeId === record.challengeId
+    );
+    const wasTimely = challenge
+      ? evaluateChallengeTimeliness(
+          challenge,
+          record.completedAt,
+          protocolStartAt
+        ).wasTimely
+      : false;
+    return total + calculateChallengeAdherenceContribution(record, wasTimely);
+  }, 0);
 }
 
 export function evaluateChallengeTimeliness(
@@ -314,7 +326,11 @@ export function evaluateChallengeRules(
     return challenge.completionStatus === ChallengeCompletionStatus.Pending;
   });
 
-  const adherenceContribution = sumChallengeAdherenceContribution(completionRecords);
+  const adherenceContribution = sumChallengeAdherenceContribution(
+    completionRecords,
+    challenges,
+    context.protocolStartAt
+  );
 
   const result: ChallengeEngineResult = {
     valid: issues.length === 0,

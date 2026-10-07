@@ -101,13 +101,40 @@ describe("challenge engine internal rules", () => {
           finalStatus: ChallengeCompletionStatus.Completed,
           completedAt: "2026-04-10T12:00:00Z",
           response: "done",
-          wasTimely: true,
+          wasTimely: false,
         },
       ],
       protocolStartAt: "2026-04-10T00:00:00Z",
     });
 
     expect(result.adherenceContribution).toBe(1);
+  });
+
+  it("does not grant full adherence contribution when a record claims timely completion after the due day", () => {
+    const result = evaluateChallengeRules({
+      challenges: [
+        makeChallenge({
+          completionStatus: ChallengeCompletionStatus.Completed,
+          response: "done",
+        }),
+      ],
+      completionRecords: [
+        {
+          recordId: "record-1",
+          challengeId: "challenge-day1-checkin",
+          protocolId: "protocol-sleep-support",
+          userId: "user-1",
+          finalStatus: ChallengeCompletionStatus.Completed,
+          completedAt: "2026-04-11T00:00:00Z",
+          response: "done",
+          wasTimely: true,
+        },
+      ],
+      protocolStartAt: "2026-04-10T00:00:00Z",
+    });
+
+    expect(result.adherenceContribution).toBe(0.5);
+    expect(result.issues.some((issue) => issue.code === "CE-002")).toBe(true);
   });
 
   it("detects late or invalid dueDay values relative to protocol start", () => {
