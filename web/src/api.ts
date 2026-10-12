@@ -9,13 +9,18 @@ import type {
 } from "./types";
 
 export class ApiRequestError extends Error {
+  readonly status: number;
+  readonly code: string | null;
+
   constructor(
     message: string,
-    readonly status: number,
-    readonly code: string | null
+    status: number,
+    code: string | null
   ) {
     super(message);
     this.name = "ApiRequestError";
+    this.status = status;
+    this.code = code;
   }
 }
 

@@ -73,8 +73,6 @@ function App() {
 
   useEffect(() => {
     if (!selectedProtocolId) {
-      setProtocolDetail(null);
-      setAnalyticsDetail(null);
       return;
     }
 
