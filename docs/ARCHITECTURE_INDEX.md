@@ -49,6 +49,23 @@ This index is the authoritative map of all files, modules, and documents in the 
 
 ---
 
+## /web — Frontend Operations Console
+
+| File | Description | Locked |
+|------|-------------|--------|
+| `web/README.md` | Web console setup and environment configuration | ⬜ |
+| `web/.env.example` | Frontend runtime environment variable template | ⬜ |
+| `web/src/App.tsx` | Console UI for health, protocol, and analytics operations | ⬜ |
+| `web/src/api.ts` | Typed API client with tenant and bearer-token header support | ⬜ |
+| `web/src/config.ts` | Frontend runtime configuration parsing and validation | ⬜ |
+| `web/src/types.ts` | Frontend API payload and envelope types | ⬜ |
+| `web/src/index.css` | Frontend visual styling and responsive layout rules | ⬜ |
+| `web/src/main.tsx` | Frontend entry point | ⬜ |
+| `web/vite.config.ts` | Vite build/dev configuration | ⬜ |
+| `web/package.json` | Frontend scripts and dependencies | ⬜ |
+
+---
+
 ## /docs — Architecture Governance
 
 | File | Description | Locked |
