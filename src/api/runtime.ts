@@ -24,6 +24,7 @@ export interface RuntimeConfig {
   databaseConfigured: boolean;
   authMode: AuthMode;
   oidc: Readonly<OidcRuntimeConfig> | null;
+  corsAllowedOrigins: readonly string[];
   port: number;
 }
 
@@ -44,6 +45,7 @@ const STORAGE_MODES = new Set<StorageMode>(["memory", "database"]);
 const AUTH_MODES = new Set<AuthMode>(["disabled", "oidc"]);
 const ALGORITHMS: readonly JwtAlgorithm[] = Object.freeze(["RS256"]);
 const validatedConfigurations = new WeakSet<object>();
+const LOOPBACK_HOSTS = new Set<string>(["localhost", "127.0.0.1", "::1"]);
 
 function nonEmpty(value: string | undefined): boolean {
   return typeof value === "string" && value.trim().length > 0;
@@ -123,6 +125,55 @@ function normalizedAbsoluteHttpsUrl(value: string, field: string): string {
 function exactAbsoluteHttpsUrl(value: string, field: string): string {
   validateAbsoluteHttpsUrl(value, field);
   return value;
+}
+
+function parseCorsAllowedOrigins(
+  environment: NodeJS.ProcessEnv,
+  runtimeMode: RuntimeMode
+): readonly string[] {
+  const raw = environment["PHYTO_CORS_ALLOWED_ORIGINS"];
+  if (!nonEmpty(raw)) return Object.freeze([]);
+
+  const origins = new Set<string>();
+  for (const candidate of raw!.split(",")) {
+    const value = candidate.trim();
+    if (value.length === 0) continue;
+
+    let parsed: URL;
+    try {
+      parsed = new URL(value);
+    } catch {
+      throw new RuntimeConfigurationError(
+        "PHYTO_CORS_ALLOWED_ORIGINS entries must be absolute origin URLs."
+      );
+    }
+
+    if (!["http:", "https:"].includes(parsed.protocol)) {
+      throw new RuntimeConfigurationError(
+        "PHYTO_CORS_ALLOWED_ORIGINS entries must use http or https."
+      );
+    }
+    if (parsed.username || parsed.password || parsed.search || parsed.hash) {
+      throw new RuntimeConfigurationError(
+        "PHYTO_CORS_ALLOWED_ORIGINS entries must not include credentials, query strings, or fragments."
+      );
+    }
+    if (parsed.pathname !== "/" && parsed.pathname !== "") {
+      throw new RuntimeConfigurationError(
+        "PHYTO_CORS_ALLOWED_ORIGINS entries must be origins without paths."
+      );
+    }
+    if ((runtimeMode === "staging" || runtimeMode === "production")
+        && parsed.protocol === "http:"
+        && !LOOPBACK_HOSTS.has(parsed.hostname)) {
+      throw new RuntimeConfigurationError(
+        "Staging and production CORS origins must use HTTPS unless targeting loopback hosts."
+      );
+    }
+    origins.add(parsed.origin);
+  }
+
+  return Object.freeze([...origins]);
 }
 
 function oidcConfigFrom(
@@ -235,6 +286,7 @@ export function loadRuntimeConfig(
     databaseConfigured,
     authMode,
     oidc: oidcConfigFrom(environment, authMode),
+    corsAllowedOrigins: parseCorsAllowedOrigins(environment, runtimeMode),
     port: portFrom(environment),
   };
   validateRuntimeInvariants(config);
@@ -264,6 +316,8 @@ export function safeRuntimeDiagnostics(
     databaseConfigured: config.databaseConfigured,
     authMode: config.authMode,
     identityConfigured: config.oidc !== null,
+    corsEnabled: config.corsAllowedOrigins.length > 0,
+    corsOriginCount: config.corsAllowedOrigins.length,
     port: config.port,
   };
 }

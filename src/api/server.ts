@@ -22,6 +22,9 @@ import { createOidcTokenVerifier } from "./security/identity";
 import type { SecurityDependencies } from "./security/middleware";
 import { ApiErrorResponse } from "./types";
 
+const CORS_ALLOW_METHODS = "GET,OPTIONS";
+const CORS_ALLOW_HEADERS = "Authorization, Content-Type, X-Phyto-Tenant-Id";
+
 export function createApp(
   runtimeConfig: Readonly<RuntimeConfig> = loadRuntimeConfig(),
   securityDependencies: Readonly<SecurityDependencies> = {}
@@ -48,6 +51,46 @@ export function createApp(
 
   app.disable("x-powered-by");
   app.use(express.json({ limit: "64kb" }));
+  app.use((req, res, next) => {
+    const allowedOrigins = runtimeConfig.corsAllowedOrigins;
+    if (allowedOrigins.length === 0) {
+      next();
+      return;
+    }
+
+    const origin = req.headers.origin;
+    if (typeof origin !== "string" || origin.length === 0) {
+      next();
+      return;
+    }
+
+    if (!allowedOrigins.includes(origin)) {
+      if (req.method === "OPTIONS") {
+        const body: ApiErrorResponse = {
+          success: false,
+          error: {
+            code: "FORBIDDEN",
+            message: "The request origin is not allowed.",
+          },
+          generatedAt: new Date().toISOString(),
+        };
+        res.status(403).json(body);
+        return;
+      }
+      next();
+      return;
+    }
+
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Methods", CORS_ALLOW_METHODS);
+    res.setHeader("Access-Control-Allow-Headers", CORS_ALLOW_HEADERS);
+    if (req.method === "OPTIONS") {
+      res.status(204).send();
+      return;
+    }
+    next();
+  });
 
   app.use("/health", healthRouter);
   app.use("/protocols", protocolsRouter);
