@@ -61,5 +61,10 @@
     "@prisma/client": "^7.10.0",
     "express": "^5.3.0",
     "pg": "^8.23.1"
+  },
+  "overrides": {
+    "mysql2": "^3.24.6",
+    "fast-uri": "^3.1.8",
+    "deepmerge-ts": "^8.0.2"
   }
 }
