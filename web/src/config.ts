@@ -1,7 +1,6 @@
 interface FrontendConfig {
   apiBaseUrl: string;
   tenantId: string | null;
-  bearerToken: string | null;
 }
 
 function normalizeBaseUrl(rawUrl: string): string {
@@ -12,8 +11,12 @@ function normalizeBaseUrl(rawUrl: string): string {
     throw new Error("VITE_PHYTO_API_BASE_URL must be a valid absolute URL.");
   }
 
-  if (!parsed.protocol.startsWith("http")) {
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
     throw new Error("VITE_PHYTO_API_BASE_URL must use HTTP or HTTPS.");
+  }
+
+  if (parsed.username || parsed.password) {
+    throw new Error("VITE_PHYTO_API_BASE_URL must not include credentials.");
   }
 
   if (parsed.search || parsed.hash) {
@@ -34,14 +37,15 @@ function optionalTrimmed(value: string | undefined): string | null {
 }
 
 export function readFrontendConfig(): FrontendConfig {
-  const apiBaseUrl = normalizeBaseUrl(
-    import.meta.env.VITE_PHYTO_API_BASE_URL ?? "http://localhost:3000"
-  );
+  const configuredApiBaseUrl = import.meta.env.VITE_PHYTO_API_BASE_URL;
+  if (import.meta.env.PROD && !optionalTrimmed(configuredApiBaseUrl)) {
+    throw new Error("VITE_PHYTO_API_BASE_URL is required for production builds.");
+  }
+  const apiBaseUrl = normalizeBaseUrl(configuredApiBaseUrl ?? "http://localhost:3000");
 
   return {
     apiBaseUrl,
     tenantId: optionalTrimmed(import.meta.env.VITE_PHYTO_TENANT_ID),
-    bearerToken: optionalTrimmed(import.meta.env.VITE_PHYTO_BEARER_TOKEN),
   };
 }
 

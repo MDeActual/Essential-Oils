@@ -29,9 +29,6 @@ function buildHeaders(): Headers {
     Accept: "application/json",
   });
 
-  if (frontendConfig.bearerToken) {
-    headers.set("Authorization", `Bearer ${frontendConfig.bearerToken}`);
-  }
   if (frontendConfig.tenantId) {
     headers.set("X-Phyto-Tenant-Id", frontendConfig.tenantId);
   }

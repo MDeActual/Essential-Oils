@@ -7,7 +7,7 @@ Read-only React + Vite frontend for the Phyto.ai API.
 1. Install dependencies:
 
 ```bash
-npm install
+npm ci
 ```
 
 2. Configure environment:
@@ -26,9 +26,12 @@ The default backend target is `http://localhost:3000`.
 
 ## Environment Variables
 
-- `VITE_PHYTO_API_BASE_URL` (required): absolute backend base URL.
+- `VITE_PHYTO_API_BASE_URL` (required for production builds): absolute backend base URL.
 - `VITE_PHYTO_TENANT_ID` (optional): sent as `X-Phyto-Tenant-Id`.
-- `VITE_PHYTO_BEARER_TOKEN` (optional): sent as `Authorization: Bearer <token>`.
+
+Bearer tokens must not be embedded in Vite environment variables because they
+are shipped in the public JavaScript bundle. The console currently has no
+interactive OIDC login flow, so it cannot authenticate to OIDC-protected APIs.
 
 ## Build
 

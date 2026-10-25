@@ -58,6 +58,7 @@ export function createApp(
       return;
     }
 
+    res.vary("Origin");
     const origin = req.headers.origin;
     if (typeof origin !== "string" || origin.length === 0) {
       next();
@@ -81,7 +82,6 @@ export function createApp(
       return;
     }
 
-    res.setHeader("Vary", "Origin");
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Access-Control-Allow-Methods", CORS_ALLOW_METHODS);
     res.setHeader("Access-Control-Allow-Headers", CORS_ALLOW_HEADERS);

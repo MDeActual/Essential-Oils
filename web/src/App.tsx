@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ApiRequestError,
   getAnalyticsProtocol,
@@ -27,7 +27,7 @@ function formatError(error: unknown): string {
 }
 
 function App() {
-  const [state, setState] = useState<LoadState>("idle");
+  const [state, setState] = useState<LoadState>("loading");
   const [error, setError] = useState<string | null>(null);
 
   const [health, setHealth] = useState<HealthPayload | null>(null);
@@ -37,15 +37,25 @@ function App() {
   const [selectedProtocolId, setSelectedProtocolId] = useState<string | null>(null);
   const [protocolDetail, setProtocolDetail] = useState<ProtocolDetail | null>(null);
   const [analyticsDetail, setAnalyticsDetail] = useState<AnalyticsProtocolDetailPayload | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const selectedProtocolIdRef = useRef<string | null>(null);
 
   const selectedProtocol = useMemo(
     () => protocols.find((p) => p.protocolId === selectedProtocolId) ?? null,
     [protocols, selectedProtocolId]
   );
 
-  async function loadOverview(): Promise<void> {
-    setState("loading");
+  const selectProtocol = useCallback((protocolId: string | null): void => {
+    if (protocolId === selectedProtocolIdRef.current) return;
+    selectedProtocolIdRef.current = protocolId;
+    setProtocolDetail(null);
+    setAnalyticsDetail(null);
     setError(null);
+    setDetailLoading(protocolId !== null);
+    setSelectedProtocolId(protocolId);
+  }, []);
+
+  const loadOverview = useCallback(async (): Promise<void> => {
     try {
       const [nextHealth, nextProtocols, nextAnalytics] = await Promise.all([
         getHealth(),
@@ -56,20 +66,28 @@ function App() {
       setProtocols(nextProtocols);
       setAnalytics(nextAnalytics);
 
-      setSelectedProtocolId((current) => {
-        if (current && nextProtocols.some((p) => p.protocolId === current)) return current;
-        return nextProtocols[0]?.protocolId ?? null;
-      });
+      const currentProtocolId = selectedProtocolIdRef.current;
+      const nextSelectedProtocolId = currentProtocolId
+        && nextProtocols.some((p) => p.protocolId === currentProtocolId)
+        ? currentProtocolId
+        : nextProtocols[0]?.protocolId ?? null;
+      selectProtocol(nextSelectedProtocolId);
       setState("ready");
     } catch (cause) {
       setState("error");
       setError(formatError(cause));
     }
-  }
+  }, [selectProtocol]);
 
   useEffect(() => {
+    void Promise.resolve().then(loadOverview);
+  }, [loadOverview]);
+
+  function refreshOverview(): void {
+    setState("loading");
+    setError(null);
     void loadOverview();
-  }, []);
+  }
 
   useEffect(() => {
     if (!selectedProtocolId) {
@@ -86,9 +104,11 @@ function App() {
         if (cancelled) return;
         setProtocolDetail(nextProtocolDetail);
         setAnalyticsDetail(nextAnalyticsDetail);
+        setDetailLoading(false);
       } catch (cause) {
         if (cancelled) return;
         setError(formatError(cause));
+        setDetailLoading(false);
       }
     })();
 
@@ -114,15 +134,11 @@ function App() {
             <span>Tenant Header</span>
             <strong>{frontendConfig.tenantId ?? "not set"}</strong>
           </div>
-          <div>
-            <span>Auth Token</span>
-            <strong>{frontendConfig.bearerToken ? "configured" : "not set"}</strong>
-          </div>
         </div>
       </header>
 
       <section className="controls">
-        <button type="button" onClick={() => void loadOverview()} disabled={state === "loading"}>
+        <button type="button" onClick={refreshOverview} disabled={state === "loading"}>
           {state === "loading" ? "Refreshing..." : "Refresh Snapshot"}
         </button>
         {error && <p className="error">{error}</p>}
@@ -176,9 +192,17 @@ function App() {
                   <tr
                     key={protocol.protocolId}
                     className={protocol.protocolId === selectedProtocolId ? "active" : ""}
-                    onClick={() => setSelectedProtocolId(protocol.protocolId)}
                   >
-                    <td>{protocol.protocolId}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="protocol-select"
+                        aria-pressed={protocol.protocolId === selectedProtocolId}
+                        onClick={() => selectProtocol(protocol.protocolId)}
+                      >
+                        {protocol.protocolId}
+                      </button>
+                    </td>
                     <td>{protocol.goal}</td>
                     <td>{protocol.status}</td>
                     <td>{protocol.durationDays}</td>
@@ -192,6 +216,7 @@ function App() {
         <article className="panel">
           <h2>Selected Protocol Detail</h2>
           {!selectedProtocol && <p>Select a protocol.</p>}
+          {selectedProtocol && detailLoading && <p>Loading protocol details...</p>}
           {selectedProtocol && protocolDetail && analyticsDetail && (
             <>
               <p>

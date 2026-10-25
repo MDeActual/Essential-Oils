@@ -354,6 +354,23 @@ describe("CORS boundary", () => {
 
     expect(res.body.success).toBe(false);
     expect(res.body.error.code).toBe("FORBIDDEN");
+    expect(res.headers["vary"]).toContain("Origin");
+  });
+
+  it("varies responses by origin even when no origin is supplied", async () => {
+    const res = await request(corsApp).get("/health").expect(200);
+
+    expect(res.headers["vary"]).toContain("Origin");
+  });
+
+  it("varies disallowed-origin responses by origin", async () => {
+    const res = await request(corsApp)
+      .get("/health")
+      .set("Origin", "https://blocked.example")
+      .expect(200);
+
+    expect(res.headers["access-control-allow-origin"]).toBeUndefined();
+    expect(res.headers["vary"]).toContain("Origin");
   });
 });
 

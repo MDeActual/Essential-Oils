@@ -169,12 +169,24 @@ td {
   vertical-align: top;
 }
 
-tbody tr {
-  cursor: pointer;
-}
-
 tbody tr.active {
   background: #edf8f8;
+}
+
+.protocol-select {
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--accent);
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.protocol-select:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
 }
 
 @media (max-width: 980px) {

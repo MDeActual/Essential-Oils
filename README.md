@@ -40,6 +40,7 @@ TypeScript backend for Phyto.ai’s protocol intelligence platform, including:
 
 ```bash
 npm ci
+npm --prefix web ci
 ```
 
 2. Configure environment:
@@ -104,7 +105,11 @@ npm run dev
 Key frontend configuration:
 - `VITE_PHYTO_API_BASE_URL` (absolute backend URL)
 - `VITE_PHYTO_TENANT_ID` (optional for tenant context)
-- `VITE_PHYTO_BEARER_TOKEN` (optional for OIDC-protected reads)
+
+The console does not accept a build-time bearer token. Production OIDC login
+requires a browser authentication flow configured for the deployment's identity
+provider; until that is configured, use the console only with an API runtime
+whose authentication mode is appropriate for the environment.
 
 ## API Endpoints
 
