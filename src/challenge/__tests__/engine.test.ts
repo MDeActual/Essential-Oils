@@ -168,11 +168,30 @@ describe("challenge engine internal rules", () => {
     expect(result.wasTimely).toBe(true);
   });
 
+  it("rejects invalid completion timestamps", () => {
+    const result = evaluateChallengeTimeliness(
+      makeChallenge(),
+      "not-a-date",
+      "2026-04-10T00:00:00Z"
+    );
+
+    expect(result.valid).toBe(false);
+    expect(result.wasTimely).toBe(false);
+    expect(result.issues.some((issue) => issue.field === "completedAt")).toBe(true);
+  });
+
   it("canPresentChallenge blocks presentation when an adherence challenge is already active", () => {
     const challenge = makeChallenge({ challengeId: "challenge-two" });
     const active = [makeChallenge({ challengeId: "challenge-one" })];
 
     expect(canPresentChallenge(challenge, active)).toBe(false);
+  });
+
+  it.each([
+    ChallengeCompletionStatus.Completed,
+    ChallengeCompletionStatus.Skipped,
+  ])("does not present terminal challenges (%s)", (completionStatus) => {
+    expect(canPresentChallenge(makeChallenge({ completionStatus }))).toBe(false);
   });
 
   it("buildChallengeQueue orders adherence before educational and experiential challenges", () => {

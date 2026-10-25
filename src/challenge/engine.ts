@@ -170,11 +170,22 @@ export function evaluateChallengeTimeliness(
   dueDate.setUTCHours(23, 59, 59, 999);
 
   const completedAtDate = new Date(completedAt);
-  const wasTimely = Number.isFinite(completedAtDate.getTime())
-    ? completedAtDate.getTime() <= dueDate.getTime()
-    : false;
+  if (!Number.isFinite(completedAtDate.getTime())) {
+    issues.push({
+      code: "CE-002",
+      challengeId: challenge.challengeId,
+      field: "completedAt",
+      message: "Completion timestamp must be a valid ISO 8601 date.",
+    });
+    return {
+      valid: false,
+      wasTimely: false,
+      issues,
+    };
+  }
+  const wasTimely = completedAtDate.getTime() <= dueDate.getTime();
 
-  if (Number.isFinite(completedAtDate.getTime()) && !wasTimely) {
+  if (!wasTimely) {
     issues.push({
       code: "CE-002",
       challengeId: challenge.challengeId,
@@ -353,6 +364,10 @@ export function canPresentChallenge(
   challenge: Pick<Challenge, "type" | "completionStatus" | "response" | "dueDay" | "challengeId">,
   pendingChallenges: Challenge[] = []
 ): boolean {
+  if (challenge.completionStatus !== ChallengeCompletionStatus.Pending) {
+    return false;
+  }
+
   const activeAdherenceCount = pendingChallenges.filter(
     (candidate) =>
       candidate.type === ChallengeType.Adherence &&
@@ -363,13 +378,6 @@ export function canPresentChallenge(
     challenge.type === ChallengeType.Adherence &&
     challenge.completionStatus === ChallengeCompletionStatus.Pending &&
     activeAdherenceCount >= 1
-  ) {
-    return false;
-  }
-
-  if (
-    challenge.completionStatus === ChallengeCompletionStatus.Completed &&
-    (!challenge.response || challenge.response.trim().length === 0)
   ) {
     return false;
   }
