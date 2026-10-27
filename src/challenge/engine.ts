@@ -326,6 +326,16 @@ export function evaluateChallengeRules(
       message: error.message,
     }))
   );
+  const completionRecordsMatchChallenges = completionRecords.every((record) =>
+    challenges.some((challenge) => challenge.challengeId === record.challengeId)
+  );
+  if (!completionRecordsMatchChallenges) {
+    issues.push({
+      code: "CE-003",
+      field: "challengeId",
+      message: "Completion records must reference a challenge in the evaluated set.",
+    });
+  }
 
   const transitionIssues = validateTerminalChallengeState(challenges);
   issues.push(...transitionIssues);
@@ -337,11 +347,14 @@ export function evaluateChallengeRules(
     return challenge.completionStatus === ChallengeCompletionStatus.Pending;
   });
 
-  const adherenceContribution = sumChallengeAdherenceContribution(
-    completionRecords,
-    challenges,
-    context.protocolStartAt
-  );
+  const adherenceContribution =
+    completionValidation.valid && completionRecordsMatchChallenges
+      ? sumChallengeAdherenceContribution(
+          completionRecords,
+          challenges,
+          context.protocolStartAt
+        )
+      : 0;
 
   const result: ChallengeEngineResult = {
     valid: issues.length === 0,

@@ -137,6 +137,85 @@ describe("challenge engine internal rules", () => {
     expect(result.issues.some((issue) => issue.code === "CE-002")).toBe(true);
   });
 
+  it("does not score duplicate completion records", () => {
+    const completionRecord = {
+      recordId: "record-1",
+      challengeId: "challenge-day1-checkin",
+      protocolId: "protocol-sleep-support",
+      userId: "user-1",
+      finalStatus: ChallengeCompletionStatus.Completed as const,
+      completedAt: "2026-04-10T12:00:00Z",
+      response: "done",
+      wasTimely: true,
+    };
+    const result = evaluateChallengeRules({
+      challenges: [
+        makeChallenge({
+          completionStatus: ChallengeCompletionStatus.Completed,
+          response: "done",
+        }),
+      ],
+      completionRecords: [
+        completionRecord,
+        { ...completionRecord, recordId: "record-2" },
+      ],
+      protocolStartAt: "2026-04-10T00:00:00Z",
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.adherenceContribution).toBe(0);
+    expect(result.issues.some((issue) => issue.field === "challengeId")).toBe(true);
+  });
+
+  it("does not score completion records that fail canonical response validation", () => {
+    const result = evaluateChallengeRules({
+      challenges: [
+        makeChallenge({
+          completionStatus: ChallengeCompletionStatus.Completed,
+          response: "done",
+        }),
+      ],
+      completionRecords: [
+        {
+          recordId: "record-1",
+          challengeId: "challenge-day1-checkin",
+          protocolId: "protocol-sleep-support",
+          userId: "user-1",
+          finalStatus: ChallengeCompletionStatus.Completed,
+          completedAt: "2026-04-10T12:00:00Z",
+          response: "x".repeat(5001),
+          wasTimely: true,
+        },
+      ],
+      protocolStartAt: "2026-04-10T00:00:00Z",
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.adherenceContribution).toBe(0);
+    expect(result.issues.some((issue) => issue.code === "CE-006")).toBe(true);
+  });
+
+  it("only keeps pending challenges eligible", () => {
+    const result = evaluateChallengeRules({
+      challenges: [
+        makeChallenge({ challengeId: "pending" }),
+        makeChallenge({
+          challengeId: "completed",
+          completionStatus: ChallengeCompletionStatus.Completed,
+          response: "done",
+        }),
+        makeChallenge({
+          challengeId: "skipped",
+          completionStatus: ChallengeCompletionStatus.Skipped,
+        }),
+      ],
+    });
+
+    expect(result.eligibleChallenges.map((challenge) => challenge.challengeId)).toEqual([
+      "pending",
+    ]);
+  });
+
   it("detects late or invalid dueDay values relative to protocol start", () => {
     const result = evaluateChallengeTimeliness(
       makeChallenge({

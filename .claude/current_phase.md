@@ -67,10 +67,10 @@ Phase 4 introduces the database persistence layer using Prisma. All deliverables
 | `docs/natural_remedy_ontology.md` — extended oil ontology with therapeutic categories | ✅ Complete |
 | `docs/protocol_evolution_system.md` — protocol iteration and evolution rules | ✅ Complete |
 | `docs/synthetic_simulation_specification.md` — simulation data isolation and generation rules | ✅ Complete |
-| Challenge Engine implementation in `src/challenge/` (if not already complete — verify) | ⬜ Pending |
-| Protocol Evolution agent wiring (advisory only; no autonomous commit rights) | ⬜ Pending |
-| Phase 5 ADR entry in `docs/ARCHITECTURE_DECISION_LOG.md` | ⬜ Pending |
-| Update `docs/ARCHITECTURE_INDEX.md` with any new files | ⬜ Pending |
+| Challenge Engine rule evaluation in `src/challenge/` with regression tests | ✅ Implemented; human review pending |
+| Protocol Evolution advisory reports from aggregate signals (no autonomous protocol changes) | ✅ Implemented; human review pending |
+| Phase 5 ADR entry in `docs/ARCHITECTURE_DECISION_LOG.md` | 🟡 ADR-019 proposed; human approval pending |
+| Update `docs/ARCHITECTURE_INDEX.md` with Phase 5 files | ✅ Complete |
 
 ### Phase 5 Exit Criteria
 
@@ -78,7 +78,9 @@ Phase 4 introduces the database persistence layer using Prisma. All deliverables
 2. Challenge Engine spec is complete and references domain model correctly.
 3. Any new source modules pass the full test suite.
 4. No locked architectural decisions are violated.
-5. Human project lead reviews and accepts Phase 5 deliverables.
+5. Human project lead reviews and accepts Phase 5 deliverables. ⬜ Pending
+
+The Phase 4 staging-database verification remains a separate follow-up and is not a Phase 5 exit criterion.
 
 ---
 

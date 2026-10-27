@@ -12,7 +12,7 @@
 
 **Architecture Package Version**: v11 CANONICAL
 **Governance Layer**: Architecture Control Layer v1.0 (established 2026-04-10)
-**Development Status**: Phase 4 complete (reviewed and accepted by human project lead 2026-08-14). Phase 5 active — Challenge Engine specification and missing governance docs.
+**Development Status**: Phase 4 complete (reviewed and accepted by human project lead 2026-08-14). Phase 5 active — implementation and human review remain.
 
 ---
 
@@ -42,7 +42,8 @@
 | `src/ontology/` | Oil ontology structures, schema, validation | ✅ Complete (Phase 1) |
 | `src/blend/` | Blend entity types, schema, validation | ✅ Complete (Phase 1) |
 | `src/protocol/` | Protocol and Challenge entity types, schema, validation | ✅ Complete (Phase 1) |
-| `src/challenge/` | Challenge lifecycle, state transitions, participation and completion records | ✅ Complete (Phase 1) |
+| `src/challenge/` | Challenge lifecycle, state transitions, participation and completion records; internal rule evaluation | Phase 5 implementation pending human review |
+| `src/evolution/` | Protocol Evolution advisory reports from aggregate signals | Phase 5 implementation pending human review |
 | `src/analytics/` | Contributor analytics pipeline | ✅ Complete (Phase 2) |
 | `src/simulation/` | Synthetic simulation environment | ✅ Complete (Phase 1) |
 | `src/api/` | External API layer | ✅ Complete (Phase 3) |
@@ -52,7 +53,7 @@
 
 ## Known Gaps (from Architecture Review) — Phase 5 Targets
 
-The following docs are missing and are the primary deliverables for Phase 5:
+The four governance documents below are complete. Phase 5 source implementation and human review remain:
 
 | Gap | Phase 5 Target File | Status |
 |-----|---------------------|--------|
@@ -61,7 +62,7 @@ The following docs are missing and are the primary deliverables for Phase 5:
 | Protocol evolution system | `docs/protocol_evolution_system.md` | ✅ Complete |
 | Synthetic simulation specification | `docs/synthetic_simulation_specification.md` | ✅ Complete |
 
-These must be completed before source module implementation for Phase 5 begins. The orchestrator reading order references all four.
+The separate Phase 4 staging-database verification is tracked in `.claude/current_phase.md`.
 
 ---
 
