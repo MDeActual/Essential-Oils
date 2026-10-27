@@ -55,7 +55,7 @@ This index is the authoritative map of all files, modules, and documents in the 
 |------|-------------|--------|
 | `docs/ARCHITECTURE_INDEX.md` | This file — canonical file map | ✅ |
 | `docs/ARCHITECTURE_LOCK.md` | Frozen architectural decisions | ✅ |
-| `docs/ARCHITECTURE_DECISION_LOG.md` | ADR history and rationale | ⬜ |
+| `docs/ARCHITECTURE_DECISION_LOG.md` | ADR history and rationale, including proposed ADR-019 for Phase 5 | ⬜ |
 | `docs/DOMAIN_MODEL.md` | Core domain entities and relationships | ✅ |
 | `docs/MOAT_MODEL.md` | Competitive differentiation and IP boundaries | ✅ |
 | `docs/autonomous_iteration_protocol.md` | Rules for autonomous protocol evolution | ⬜ |
@@ -93,7 +93,8 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `src/ontology/` | Oil and remedy ontology definitions | **Complete (Phase 1)** |
 | `src/blend/` | Blend entity types, schema, and validation | **Complete (Phase 1)** |
 | `src/protocol/` | Protocol and Challenge entity types, schema, and validation | **Complete (Phase 1)** |
-| `src/challenge/` | Challenge lifecycle, state transitions, participation and completion records | **Complete (Phase 1)** |
+| `src/challenge/` | Challenge lifecycle, state transitions, participation and completion records; internal rule evaluation | **Phase 5 implementation (pending human review)** |
+| `src/evolution/` | Protocol Evolution advisory reports from precomputed aggregate signals; no autonomous protocol changes | **Phase 5 implementation (pending human review)** |
 | `src/analytics/` | Contributor analytics pipeline | **Complete (Phase 2)** |
 | `src/simulation/` | Synthetic simulation environment | **Complete (Phase 1)** |
 | `src/api/` | External API layer with fail-closed runtime and identity boundary | **Complete (Phase 4)** |
@@ -141,6 +142,15 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `src/challenge/__tests__/challenge.test.ts` | Challenge lifecycle, participation, and completion integrity tests |
 | `src/challenge/engine.ts` | Internal Challenge Engine rule evaluation (M-003; not re-exported by the public module) |
 | `src/challenge/__tests__/engine.test.ts` | Unit and regression tests for internal Challenge Engine behavior |
+
+### /src/evolution — Files
+
+| File | Description |
+|------|-------------|
+| `src/evolution/types.ts` | Aggregate Evolution signal, candidate, and report types |
+| `src/evolution/advisory.ts` | Internal advisory report builder; candidates require human approval |
+| `src/evolution/index.ts` | Module interface for the advisory report builder and types |
+| `src/evolution/__tests__/advisory.test.ts` | Tests for aggregate evidence gates and advisory-only report generation |
 
 ### /src/analytics — Files
 

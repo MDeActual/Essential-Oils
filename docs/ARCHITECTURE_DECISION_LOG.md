@@ -342,18 +342,19 @@ The analytics signal model (M-004) is intentionally excluded. This module handle
 
 ---
 
-### ADR-019: Phase 5 Internal Challenge Engine
+### ADR-019: Phase 5 Challenge Engine and Protocol Evolution Advisory Layer
 **Status**: PROPOSED
 **Date**: 2026-10-27
 **Deciders**: Pending Human Project Lead review
 
-**Context**: ADR-007 intentionally excluded M-003 challenge engine rule evaluation from `src/challenge/`. Phase 5 now contains an internal implementation in `src/challenge/engine.ts`; documenting that implementation requires an explicit architectural decision and human approval.
+**Context**: ADR-007 intentionally excluded M-003 challenge engine rule evaluation from `src/challenge/`. Phase 5 adds an internal evaluator and an advisory-only Protocol Evolution report builder, while preserving the M-003 and M-004 boundaries and the human approval gate.
 
-**Decision**: Proposed: authorize the internal Phase 5 challenge-engine implementation and its tests in `src/challenge/`, while keeping engine evaluation out of the public `src/challenge/index.ts` interface and preserving LOCK-002 and M-003 boundaries. This proposal does not authorize exposing rule configuration, scoring internals, or evaluation logic through external interfaces.
+**Decision**: Proposed: authorize the internal Challenge Engine evaluation in `src/challenge/` and Protocol Evolution advisory report generation in `src/evolution/`. The Evolution layer consumes precomputed aggregate signals, emits proposed candidates that require human approval, and does not modify protocols or derive the protected analytics signal methodology. Challenge Engine evaluation remains excluded from the public `src/challenge/index.ts` interface. Neither module may expose scoring internals, rule configuration, or evaluation logic through external interfaces.
 
 **Consequences**:
 - This proposal does not amend ADR-007 or authorize merging the implementation until accepted by the Human Project Lead.
-- The architecture index records the engine implementation and its tests.
-- External-facing interfaces must continue to exclude moat-protected challenge-engine behavior.
+- The architecture index records both Phase 5 modules and their tests.
+- All Evolution candidates remain advisory and require human approval; no autonomous protocol changes are permitted.
+- The implementation must preserve LOCK-002, LOCK-004, and the M-003/M-004 moat boundaries.
 
 ---
