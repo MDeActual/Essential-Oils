@@ -23,6 +23,7 @@ describe("loadRuntimeConfig", () => {
       databaseConfigured: false,
       authMode: "disabled",
       oidc: null,
+      corsAllowedOrigins: [],
       port: 3000,
     });
   });
@@ -52,6 +53,7 @@ describe("loadRuntimeConfig", () => {
         jwksUri: "https://issuer.example.test/.well-known/jwks.json",
         algorithms: ["RS256"],
       },
+      corsAllowedOrigins: [],
       port: 8080,
     });
   });
@@ -151,6 +153,35 @@ describe("loadRuntimeConfig", () => {
     }))).toThrow(/without credentials/);
   });
 
+  it("accepts normalized CORS origins and deduplicates entries", () => {
+    const config = loadRuntimeConfig(env({
+      PHYTO_CORS_ALLOWED_ORIGINS:
+        "https://app.phyto.ai, https://app.phyto.ai/ , http://localhost:5173",
+    }));
+    expect(config.corsAllowedOrigins).toEqual([
+      "https://app.phyto.ai",
+      "http://localhost:5173",
+    ]);
+  });
+
+  it("rejects path-bearing or non-http(s) CORS origins", () => {
+    expect(() => loadRuntimeConfig(env({
+      PHYTO_CORS_ALLOWED_ORIGINS: "https://app.phyto.ai/path",
+    }))).toThrow(/without paths/);
+    expect(() => loadRuntimeConfig(env({
+      PHYTO_CORS_ALLOWED_ORIGINS: "ftp://app.phyto.ai",
+    }))).toThrow(/http or https/);
+  });
+
+  it("rejects non-HTTPS non-loopback CORS origins in production", () => {
+    expect(() => loadRuntimeConfig(env({
+      PHYTO_RUNTIME_MODE: "production",
+      DATABASE_URL: "postgresql://configured",
+      PHYTO_CORS_ALLOWED_ORIGINS: "http://frontend.phyto.ai",
+      ...OIDC,
+    }))).toThrow(/must use HTTPS/);
+  });
+
   it("safe diagnostics omit database and identity-provider values", () => {
     const secretUrl = "postgresql://user:secret@example.invalid/phyto";
     const diagnostics = safeRuntimeDiagnostics(loadRuntimeConfig(env({
@@ -170,6 +201,8 @@ describe("loadRuntimeConfig", () => {
       databaseConfigured: true,
       authMode: "oidc",
       identityConfigured: true,
+      corsEnabled: false,
+      corsOriginCount: 0,
       port: 3000,
     });
   });

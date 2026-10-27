@@ -5,6 +5,7 @@ TypeScript backend for Phyto.ai’s protocol intelligence platform, including:
 - contributor analytics + simulation modules
 - read-only Express API layer
 - Prisma-backed persistence repositories (with in-memory fallback for dev/test)
+- React web console in `/web` for protocol and analytics operations
 
 ## Tech Stack
 
@@ -24,6 +25,7 @@ TypeScript backend for Phyto.ai’s protocol intelligence platform, including:
 - `/src/api` — external API (read-only routes)
 - `/src/db` — repository interfaces + Prisma implementations
 - `/prisma` — schema, migrations, seed script
+- `/web` — React + Vite frontend console for API operations
 - `/docs` — architecture governance documents
 
 ## Prerequisites
@@ -38,6 +40,7 @@ TypeScript backend for Phyto.ai’s protocol intelligence platform, including:
 
 ```bash
 npm ci
+npm --prefix web ci
 ```
 
 2. Configure environment:
@@ -48,6 +51,8 @@ cp .env.example .env
 
 Set `DATABASE_URL` in `.env` for Prisma-backed data access.  
 If `DATABASE_URL` is not set, API services automatically fall back to in-memory seed stores.
+
+Set `PHYTO_CORS_ALLOWED_ORIGINS` when serving browser clients from a different origin.
 
 3. (Optional) Prepare database and seed data:
 
@@ -62,6 +67,8 @@ npx prisma db seed
 ```bash
 npm run build
 npm test
+npm --prefix web ci
+npm run web:build
 ```
 
 > `prisma generate` runs automatically before both build and test.
@@ -86,6 +93,24 @@ The server listens on port 3000 by default. Override with the `PORT` environment
 ```bash
 PORT=8080 npm start
 ```
+
+## Running the Frontend Locally
+
+```bash
+cd web
+npm install
+cp .env.example .env.local
+npm run dev
+```
+
+Key frontend configuration:
+- `VITE_PHYTO_API_BASE_URL` (absolute backend URL)
+- `VITE_PHYTO_TENANT_ID` (optional for tenant context)
+
+The console does not accept a build-time bearer token. Production OIDC login
+requires a browser authentication flow configured for the deployment's identity
+provider; until that is configured, use the console only with an API runtime
+whose authentication mode is appropriate for the environment.
 
 ## API Endpoints
 

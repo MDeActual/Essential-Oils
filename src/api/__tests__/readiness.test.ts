@@ -45,6 +45,7 @@ describe("runtime-aware health probes", () => {
       databaseConfigured: false,
       authMode: "disabled",
       oidc: null,
+      corsAllowedOrigins: [],
       port: 3000,
     };
 

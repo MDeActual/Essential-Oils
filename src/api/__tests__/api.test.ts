@@ -19,6 +19,7 @@
 
 import request from "supertest";
 import { createApp } from "../server";
+import { loadRuntimeConfig } from "../runtime";
 
 const app = createApp();
 
@@ -317,6 +318,59 @@ describe("GET /analytics/protocols/:id", () => {
     expect(d).not.toHaveProperty("signalScore");
     expect(d).not.toHaveProperty("evolutionRecommendation");
     expect(d).not.toHaveProperty("weightingScheme");
+  });
+});
+
+describe("CORS boundary", () => {
+  const corsApp = createApp(loadRuntimeConfig({
+    PHYTO_RUNTIME_MODE: "development",
+    PHYTO_CORS_ALLOWED_ORIGINS: "https://web.phyto.ai,http://localhost:5173",
+  }));
+
+  it("adds CORS headers for allowed origins", async () => {
+    const res = await request(corsApp)
+      .get("/health")
+      .set("Origin", "https://web.phyto.ai")
+      .expect(200);
+
+    expect(res.headers["access-control-allow-origin"]).toBe("https://web.phyto.ai");
+    expect(res.headers["access-control-allow-methods"]).toBe("GET,OPTIONS");
+    expect(res.headers["access-control-allow-headers"]).toContain("X-Phyto-Tenant-Id");
+    expect(res.headers["vary"]).toContain("Origin");
+  });
+
+  it("handles allowed preflight requests", async () => {
+    await request(corsApp)
+      .options("/protocols")
+      .set("Origin", "http://localhost:5173")
+      .expect(204);
+  });
+
+  it("rejects disallowed preflight requests", async () => {
+    const res = await request(corsApp)
+      .options("/protocols")
+      .set("Origin", "https://blocked.example")
+      .expect(403);
+
+    expect(res.body.success).toBe(false);
+    expect(res.body.error.code).toBe("FORBIDDEN");
+    expect(res.headers["vary"]).toContain("Origin");
+  });
+
+  it("varies responses by origin even when no origin is supplied", async () => {
+    const res = await request(corsApp).get("/health").expect(200);
+
+    expect(res.headers["vary"]).toContain("Origin");
+  });
+
+  it("varies disallowed-origin responses by origin", async () => {
+    const res = await request(corsApp)
+      .get("/health")
+      .set("Origin", "https://blocked.example")
+      .expect(200);
+
+    expect(res.headers["access-control-allow-origin"]).toBeUndefined();
+    expect(res.headers["vary"]).toContain("Origin");
   });
 });
 
