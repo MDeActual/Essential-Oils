@@ -72,6 +72,8 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `docs/ADR-015_CLOUD_MATRIX_DEVOS_FOUNDATION.md` | ADR for establishing Cloud Matrix DevOS Foundation v0.1 | ⬜ |
 | `docs/ADR-016_FAIL_CLOSED_RUNTIME_CONFIGURATION.md` | ADR for fail-closed runtime, storage selection, and readiness behavior | ⬜ |
 | `docs/ADR-017_API_IDENTITY_AND_TENANT_BOUNDARY.md` | Accepted ADR for OIDC identity, endpoint authorization, and tenant-isolated persistence | ⬜ |
+| `docs/ADR-018_TRUST_AND_PRIVACY_FOUNDATION.md` | Accepted ADR for trust and privacy controls | ⬜ |
+| `docs/ARCHITECTURE_DECISION_LOG.md#adr-019-enforce-per-phase-adherence-challenge-coverage` | ADR-019: CE-005 per-phase adherence challenge coverage validation | ⬜ |
 | `docs/API_IDENTITY_THREAT_MODEL.md` | Threat model for JWT verification, authorization, JWKS retrieval, and tenant isolation | ⬜ |
 
 ---
@@ -92,8 +94,8 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `src/index.ts` | Server entry point — starts the Express app on `PORT` (default 3000) | **Complete (Phase 4)** |
 | `src/ontology/` | Oil and remedy ontology definitions | **Complete (Phase 1)** |
 | `src/blend/` | Blend entity types, schema, and validation | **Complete (Phase 1)** |
-| `src/protocol/` | Protocol and Challenge entity types, schema, and validation | **Complete (Phase 1)** |
-| `src/challenge/` | Challenge lifecycle, state transitions, participation and completion records | **Complete (Phase 1)** |
+| `src/protocol/` | Protocol and Challenge entity types, schema, and validation including CE-005 phase coverage | **Complete** |
+| `src/challenge/` | Challenge lifecycle, state transitions, participation and completion records (structural foundation only) | **Complete** |
 | `src/analytics/` | Contributor analytics pipeline | **Complete (Phase 2)** |
 | `src/simulation/` | Synthetic simulation environment | **Complete (Phase 1)** |
 | `src/api/` | External API layer with fail-closed runtime and identity boundary | **Complete (Phase 4)** |
@@ -126,9 +128,9 @@ This index is the authoritative map of all files, modules, and documents in the 
 |------|-------------|
 | `src/protocol/types.ts` | TypeScript types: ProtocolStatus, ChallengeType, ChallengeCompletionStatus enums; ProtocolPhase, Protocol, Challenge, validation result types |
 | `src/protocol/schema.ts` | Field-level constraint schema; PROTOCOL_MIN_PHASES, PROTOCOL_MAX_PHASES, PROTOCOL_MIN/MAX_DURATION_DAYS, SEMVER_PATTERN constants |
-| `src/protocol/validation.ts` | validateProtocol(), validateProtocolCollection(), validateChallenge(), validateChallengeCollection() with business rules |
+| `src/protocol/validation.ts` | validateProtocol(protocol, challenges), validateProtocolCollection(protocols, challenges), validateChallenge(), validateChallengeCollection(); enforces CE-005 phase coverage |
 | `src/protocol/index.ts` | Public module interface |
-| `src/protocol/__tests__/protocol.test.ts` | Protocol and Challenge integrity tests (68 tests) |
+| `src/protocol/__tests__/protocol.test.ts` | Protocol and Challenge integrity tests (71 tests) |
 
 ### /src/challenge — Files
 

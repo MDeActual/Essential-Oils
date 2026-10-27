@@ -335,6 +335,13 @@ describe("validateProtocol — phase business rules", () => {
     expect(result.errors.some((error) => error.field === "challengeIds")).toBe(true);
   });
 
+  it("reports missing challenge input instead of throwing", () => {
+    const result = validateProtocolRecord(makeProtocol(), undefined as never);
+
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((error) => error.field === "challenges")).toBe(true);
+  });
+
   it("reports error when phases array is empty", () => {
     const result = validateProtocol(makeProtocol({ phases: [], durationDays: 14 }));
     expect(result.valid).toBe(false);

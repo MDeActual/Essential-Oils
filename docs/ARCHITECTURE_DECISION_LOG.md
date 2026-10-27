@@ -341,3 +341,19 @@ The analytics signal model (M-004) is intentionally excluded. This module handle
 - `docs/API_IDENTITY_THREAT_MODEL.md` is the canonical threat analysis for this decision.
 
 ---
+
+### ADR-019: Enforce Per-Phase Adherence Challenge Coverage
+**Status**: ACCEPTED
+**Date**: 2026-10-27
+**Deciders**: Human Project Lead (authorized remediation request)
+
+**Context**: The Challenge Engine specification requires at least one adherence challenge per protocol phase, but the existing protocol validator received only a Protocol record and could not inspect Challenge types or due days.
+
+**Decision**: `validateProtocol()` and `validateProtocolCollection()` require the associated Challenge records as explicit inputs. Validation verifies that protocol challenge IDs resolve to records belonging to that protocol and that every phase, ordered by `phaseIndex`, has at least one referenced adherence challenge with a `dueDay` in that phase's inclusive duration range.
+
+**Consequences**:
+- Callers must provide the relevant Challenge records when validating a Protocol.
+- The validator enforces the published structural rule only; it does not select, sequence, personalize, or score challenges.
+- No domain entities or relationships are changed. Protocol Evolution agent wiring remains a separate pending item because ADR-013 is proposed and M-004 logic is restricted.
+
+---

@@ -101,7 +101,7 @@ The exact weighting formula is moat-protected (M-003). The above represents the 
 
 A valid protocol must contain at least one `adherence`-type challenge per phase. Protocols with no adherence challenges are invalid and will not be promoted to `active` status.
 
-**Enforced by**: `validateProtocol()` in `src/protocol/validation.ts` (to be enforced in Phase 5 implementation).
+**Enforced by**: `validateProtocol(protocol, challenges)` in `src/protocol/validation.ts`. Callers supply the protocol's associated Challenge records. Validation requires each referenced challenge ID to resolve to a record for that protocol, then checks that each phase has at least one referenced `adherence` challenge whose `dueDay` falls within that phase's inclusive day range. Phase ranges follow ascending `phaseIndex` and each phase's `durationDays`. This checks the public structural contract only; challenge selection, sequencing, and personalization remain moat-protected.
 
 ### Rule CE-006: Skip Reason Length Constraint
 

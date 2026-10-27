@@ -242,6 +242,15 @@ function validateProtocolChallengeCoverage(
   challenges: Challenge[],
   errors: ProtocolValidationError[]
 ): void {
+  if (!Array.isArray(challenges)) {
+    errors.push({
+      protocolId: protocol.protocolId,
+      field: "challenges",
+      message: "Challenge records must be supplied to validate per-phase adherence coverage.",
+    });
+    return;
+  }
+
   if (
     !Array.isArray(protocol.phases) ||
     !Array.isArray(protocol.challengeIds) ||
@@ -308,6 +317,7 @@ function validateProtocolChallengeCoverage(
  * Validates a single Protocol record against the protocol schema and business rules.
  *
  * @param protocol - The protocol record to validate.
+ * @param challenges - Challenge records associated with the protocol, required for CE-005.
  * @returns A ProtocolValidationResult indicating whether the record is valid
  *          and listing any errors found.
  */
@@ -360,6 +370,7 @@ export function validateProtocol(
  * Validates all protocols in a collection, ensuring uniqueness of protocolId values.
  *
  * @param protocols - Array of Protocol records to validate.
+ * @param challenges - Challenge records associated with the protocols, required for CE-005.
  * @returns A ProtocolValidationResult aggregating all errors across the collection.
  */
 export function validateProtocolCollection(

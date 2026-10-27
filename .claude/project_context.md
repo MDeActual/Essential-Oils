@@ -12,7 +12,7 @@
 
 **Architecture Package Version**: v11 CANONICAL
 **Governance Layer**: Architecture Control Layer v1.0 (established 2026-04-10)
-**Development Status**: Phase 4 complete (reviewed and accepted by human project lead 2026-08-14). Phase 5 active — Challenge Engine specification and missing governance docs.
+**Development Status**: Phase 4 complete (reviewed and accepted by human project lead 2026-08-14). Phase 5 active — CE-005 validation is implemented; Protocol Evolution integration remains pending authorization. Staging database verification is also pending a human-provisioned environment.
 
 ---
 
@@ -41,8 +41,8 @@
 |--------|---------|--------|
 | `src/ontology/` | Oil ontology structures, schema, validation | ✅ Complete (Phase 1) |
 | `src/blend/` | Blend entity types, schema, validation | ✅ Complete (Phase 1) |
-| `src/protocol/` | Protocol and Challenge entity types, schema, validation | ✅ Complete (Phase 1) |
-| `src/challenge/` | Challenge lifecycle, state transitions, participation and completion records | ✅ Complete (Phase 1) |
+| `src/protocol/` | Protocol and Challenge entity types, schema, validation including CE-005 phase coverage | ✅ Complete |
+| `src/challenge/` | Challenge lifecycle, state transitions, participation and completion records; no proprietary selection/sequencing logic | ✅ Complete (structural foundation) |
 | `src/analytics/` | Contributor analytics pipeline | ✅ Complete (Phase 2) |
 | `src/simulation/` | Synthetic simulation environment | ✅ Complete (Phase 1) |
 | `src/api/` | External API layer | ✅ Complete (Phase 3) |
@@ -50,18 +50,18 @@
 
 ---
 
-## Known Gaps (from Architecture Review) — Phase 5 Targets
+## Phase 5 Status
 
-The following docs are missing and are the primary deliverables for Phase 5:
+The four governance documents required for Phase 5 exist and are complete:
 
-| Gap | Phase 5 Target File | Status |
-|-----|---------------------|--------|
-| Natural remedy ontology | `docs/natural_remedy_ontology.md` | ✅ Complete |
-| Challenge Engine specification | `docs/challenge_engine_specification.md` | ✅ Complete |
-| Protocol evolution system | `docs/protocol_evolution_system.md` | ✅ Complete |
-| Synthetic simulation specification | `docs/synthetic_simulation_specification.md` | ✅ Complete |
+| Deliverable | Status |
+|-------------|--------|
+| `docs/natural_remedy_ontology.md` | ✅ Complete |
+| `docs/challenge_engine_specification.md` | ✅ Complete |
+| `docs/protocol_evolution_system.md` | ✅ Complete |
+| `docs/synthetic_simulation_specification.md` | ✅ Complete |
 
-These must be completed before source module implementation for Phase 5 begins. The orchestrator reading order references all four.
+CE-005 is enforced by protocol validation with explicit associated challenge records. Protocol Evolution agent wiring is not implemented: ADR-013 remains proposed, and the M-004 signal methodology is restricted to the authorized Contributor Analytics layer. Do not implement or expose that methodology as part of this phase without human authorization. Phase 4 staging database verification remains an operational item requiring an approved database and credentials.
 
 ---
 

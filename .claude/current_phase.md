@@ -11,7 +11,7 @@
 
 ## Phase Description
 
-Phase 4 introduces the database persistence layer using Prisma. All deliverables are complete: Prisma schema, repository interfaces, Prisma-backed implementations, migration scripts, API controller wiring, runtime entry point (`src/index.ts`), and governance docs. The API runs in-memory-fallback mode without `DATABASE_URL`, and full Prisma-backed mode when connected to PostgreSQL. The full automated test suite passes. Human project lead review accepted on 2026-08-14. Remaining P2 item: staging DB verification (run `prisma migrate deploy` + endpoint smoke tests against a live PostgreSQL instance).
+Phase 4 introduces the database persistence layer using Prisma. All deliverables are complete: Prisma schema, repository interfaces, Prisma-backed implementations, migration scripts, API controller wiring, runtime entry point (`src/index.ts`), and governance docs. Human project lead review accepted on 2026-08-14. Staging database verification remains unverified and requires a human-provisioned PostgreSQL environment, approved credentials, and authenticated endpoint smoke tests; it is not complete based on local tests.
 
 ---
 
@@ -53,11 +53,11 @@ Phase 4 introduces the database persistence layer using Prisma. All deliverables
 
 ---
 
-## Phase 5 — Challenge Engine and Missing Governance Docs
+## Phase 5 — Challenge Lifecycle and Protocol Evolution
 
 **Status**: ACTIVE
 **Started**: 2026-08-14
-**Goal**: Fill the known documentation gaps identified in `project_context.md`, then implement the Challenge Engine as the next core domain module.
+**Goal**: Complete structural Challenge Engine contracts, reconcile governance status, and define an authorized advisory-only Protocol Evolution integration without implementing M-004 logic.
 
 ### Phase 5 Deliverables
 
@@ -67,17 +67,18 @@ Phase 4 introduces the database persistence layer using Prisma. All deliverables
 | `docs/natural_remedy_ontology.md` — extended oil ontology with therapeutic categories | ✅ Complete |
 | `docs/protocol_evolution_system.md` — protocol iteration and evolution rules | ✅ Complete |
 | `docs/synthetic_simulation_specification.md` — simulation data isolation and generation rules | ✅ Complete |
-| Challenge Engine implementation in `src/challenge/` (if not already complete — verify) | ⬜ Pending |
-| Protocol Evolution agent wiring (advisory only; no autonomous commit rights) | ⬜ Pending |
-| Phase 5 ADR entry in `docs/ARCHITECTURE_DECISION_LOG.md` | ⬜ Pending |
-| Update `docs/ARCHITECTURE_INDEX.md` with any new files | ⬜ Pending |
+| Challenge lifecycle foundation in `src/challenge/` | ✅ Complete (existing lifecycle module; proprietary selection/sequencing remains out of scope) |
+| CE-005 per-phase adherence challenge coverage validation | ✅ Complete (ADR-019; `validateProtocol` requires associated challenge records) |
+| Protocol Evolution agent wiring (advisory only; no autonomous protocol changes) | ⬜ Pending — requires an authorized M-004 signal provider and human approval; ADR-013 remains proposed |
+| Phase 5 implementation decision in `docs/ARCHITECTURE_DECISION_LOG.md` | ✅ Complete — ADR-019 |
+| Reconcile architecture index and project context with repository state | ✅ Complete |
 
 ### Phase 5 Exit Criteria
 
-1. All four missing governance docs exist and are substantive (not stubs).
-2. Challenge Engine spec is complete and references domain model correctly.
-3. Any new source modules pass the full test suite.
-4. No locked architectural decisions are violated.
+1. All four Phase 5 governance documents exist and are substantive.
+2. CE-005 is enforced against the protocol's associated challenge records and phase date ranges.
+3. Any Protocol Evolution integration is authorized, advisory-only, and does not implement or expose M-004 methodology.
+4. Build and automated tests pass, and no locked architectural decisions are violated.
 5. Human project lead reviews and accepts Phase 5 deliverables.
 
 ---
