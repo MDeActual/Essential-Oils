@@ -203,7 +203,7 @@ describe("validateProtocol — valid records", () => {
   it("rejects a protocol with no adherence challenges referenced", () => {
     const result = validateProtocol(makeProtocol({ challengeIds: [] }));
     expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.field === "challengeIds")).toBe(true);
+    expect(result.errors.some((e) => e.field === "phases[0]")).toBe(true);
   });
 
   it("returns valid=true for a protocol with oilIds-only phase (no blendIds)", () => {
