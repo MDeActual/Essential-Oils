@@ -67,6 +67,7 @@ npx prisma db seed
 ```bash
 npm run build
 npm test
+npm --prefix web ci
 npm run web:build
 ```
 
