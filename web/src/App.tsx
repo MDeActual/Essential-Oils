@@ -90,6 +90,9 @@ function App() {
   }
 
   useEffect(() => {
+    setProtocolDetail(null);
+    setAnalyticsDetail(null);
+    setError(null);
     if (!selectedProtocolId) {
       return;
     }
