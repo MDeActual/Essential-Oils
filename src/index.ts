@@ -7,6 +7,8 @@
  */
 
 import "dotenv/config";
+// Vercel detects Express entrypoints from a direct framework import.
+import "express";
 import { createApp } from "./api";
 import { loadRuntimeConfig, safeRuntimeDiagnostics } from "./api/runtime";
 

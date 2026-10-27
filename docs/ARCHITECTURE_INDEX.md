@@ -139,6 +139,8 @@ This index is the authoritative map of all files, modules, and documents in the 
 | `src/challenge/validation.ts` | validateChallengeTransition(), validateChallengeParticipation(), validateChallengeCompletionRecord(), validateChallengeCompletionRecordCollection() with business rules |
 | `src/challenge/index.ts` | Public module interface |
 | `src/challenge/__tests__/challenge.test.ts` | Challenge lifecycle, participation, and completion integrity tests |
+| `src/challenge/engine.ts` | Internal Challenge Engine rule evaluation (M-003; not re-exported by the public module) |
+| `src/challenge/__tests__/engine.test.ts` | Unit and regression tests for internal Challenge Engine behavior |
 
 ### /src/analytics — Files
 
