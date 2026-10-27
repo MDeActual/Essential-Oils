@@ -22,8 +22,8 @@ import {
   SEMVER_PATTERN,
   validateChallenge,
   validateChallengeCollection,
-  validateProtocol,
-  validateProtocolCollection,
+  validateProtocol as validateProtocolRecord,
+  validateProtocolCollection as validateProtocolRecordCollection,
 } from "../index";
 import type { Challenge, Protocol, ProtocolPhase } from "../index";
 
@@ -64,6 +64,7 @@ function makeProtocol(overrides: Partial<Protocol> = {}): Protocol {
 function makeTwoPhaseProtocol(): Protocol {
   return makeProtocol({
     protocolId: "protocol-two-phase",
+    challengeIds: ["challenge-phase-one", "challenge-phase-two"],
     durationDays: 28,
     phases: [
       makePhase({ phaseIndex: 0, label: "Phase A", durationDays: 14 }),
@@ -83,6 +84,33 @@ function makeChallenge(overrides: Partial<Challenge> = {}): Challenge {
     completionStatus: ChallengeCompletionStatus.Pending,
     ...overrides,
   };
+}
+
+function makeProtocolChallenges(protocol: Protocol): Challenge[] {
+  let dueDay = 1;
+  return protocol.phases.map((phase, index) => {
+    const challenge = makeChallenge({
+      challengeId: protocol.challengeIds[index] ?? `challenge-phase-${index}`,
+      protocolId: protocol.protocolId,
+      dueDay,
+    });
+    dueDay += phase.durationDays;
+    return challenge;
+  });
+}
+
+function validateProtocol(
+  protocol: Protocol,
+  challenges: Challenge[] = makeProtocolChallenges(protocol)
+) {
+  return validateProtocolRecord(protocol, challenges);
+}
+
+function validateProtocolCollection(
+  protocols: Protocol[],
+  challenges: Challenge[] = protocols.flatMap(makeProtocolChallenges)
+) {
+  return validateProtocolRecordCollection(protocols, challenges);
 }
 
 // ---------------------------------------------------------------------------
@@ -172,9 +200,10 @@ describe("validateProtocol — valid records", () => {
     expect(result.valid).toBe(true);
   });
 
-  it("returns valid=true when protocol has empty challengeIds", () => {
+  it("rejects a protocol with no adherence challenges referenced", () => {
     const result = validateProtocol(makeProtocol({ challengeIds: [] }));
-    expect(result.valid).toBe(true);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.field === "challengeIds")).toBe(true);
   });
 
   it("returns valid=true for a protocol with oilIds-only phase (no blendIds)", () => {
@@ -278,6 +307,34 @@ describe("validateProtocol — top-level field errors", () => {
 // ---------------------------------------------------------------------------
 
 describe("validateProtocol — phase business rules", () => {
+  it("requires an adherence challenge due within every phase", () => {
+    const protocol = makeTwoPhaseProtocol();
+    const challenges = makeProtocolChallenges(protocol);
+    const result = validateProtocol(protocol, [
+      challenges[0],
+      makeChallenge({
+        challengeId: challenges[1].challengeId,
+        protocolId: protocol.protocolId,
+        type: ChallengeType.Educational,
+        dueDay: 15,
+        prompt: "Read this educational material today.",
+      }),
+    ]);
+
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((error) => error.field === "phases[1]")).toBe(true);
+  });
+
+  it("rejects challenge records that are not referenced by the protocol", () => {
+    const protocol = makeProtocol();
+    const result = validateProtocol(protocol, [
+      makeChallenge({ challengeId: "different-challenge" }),
+    ]);
+
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((error) => error.field === "challengeIds")).toBe(true);
+  });
+
   it("reports error when phases array is empty", () => {
     const result = validateProtocol(makeProtocol({ phases: [], durationDays: 14 }));
     expect(result.valid).toBe(false);

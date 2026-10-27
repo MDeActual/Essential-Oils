@@ -18,6 +18,7 @@
 
 import {
   Challenge,
+  ChallengeType,
   ChallengeValidationError,
   ChallengeValidationResult,
   Protocol,
@@ -236,6 +237,69 @@ function validateProtocolPhases(
   }
 }
 
+function validateProtocolChallengeCoverage(
+  protocol: Protocol,
+  challenges: Challenge[],
+  errors: ProtocolValidationError[]
+): void {
+  if (
+    !Array.isArray(protocol.phases) ||
+    !Array.isArray(protocol.challengeIds) ||
+    !protocol.phases.every(
+      (phase) =>
+        Number.isInteger(phase?.phaseIndex) &&
+        Number.isInteger(phase?.durationDays) &&
+        phase.durationDays > 0
+    )
+  ) {
+    return;
+  }
+
+  const phases = [...protocol.phases].sort((a, b) => a.phaseIndex - b.phaseIndex);
+  if (new Set(phases.map((phase) => phase.phaseIndex)).size !== phases.length) {
+    return;
+  }
+
+  const protocolChallenges = challenges.filter(
+    (challenge) =>
+      challenge.protocolId === protocol.protocolId &&
+      protocol.challengeIds.includes(challenge.challengeId)
+  );
+  const foundChallengeIds = new Set(protocolChallenges.map((challenge) => challenge.challengeId));
+
+  for (const challengeId of protocol.challengeIds) {
+    if (!foundChallengeIds.has(challengeId)) {
+      errors.push({
+        protocolId: protocol.protocolId,
+        field: "challengeIds",
+        message: `Challenge '${challengeId}' is not present in the supplied challenges for this protocol.`,
+      });
+    }
+  }
+
+  let firstDay = 1;
+  phases.forEach((phase) => {
+    const lastDay = firstDay + phase.durationDays - 1;
+    const hasAdherenceChallenge = protocolChallenges.some(
+      (challenge) =>
+        challenge.type === ChallengeType.Adherence &&
+        Number.isInteger(challenge.dueDay) &&
+        challenge.dueDay >= firstDay &&
+        challenge.dueDay <= lastDay
+    );
+
+    if (!hasAdherenceChallenge) {
+      errors.push({
+        protocolId: protocol.protocolId,
+        field: `phases[${phase.phaseIndex}]`,
+        message: `Phase ${phase.phaseIndex} must reference at least one adherence challenge due during that phase.`,
+      });
+    }
+
+    firstDay = lastDay + 1;
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Primary Protocol validation entrypoint
 // ---------------------------------------------------------------------------
@@ -247,7 +311,10 @@ function validateProtocolPhases(
  * @returns A ProtocolValidationResult indicating whether the record is valid
  *          and listing any errors found.
  */
-export function validateProtocol(protocol: Protocol): ProtocolValidationResult {
+export function validateProtocol(
+  protocol: Protocol,
+  challenges: Challenge[]
+): ProtocolValidationResult {
   const errors: ProtocolValidationError[] = [];
   const protocolId =
     typeof protocol?.protocolId === "string" ? protocol.protocolId : "(unknown)";
@@ -284,6 +351,8 @@ export function validateProtocol(protocol: Protocol): ProtocolValidationResult {
     validateProtocolPhases(protocol.phases, protocolId, protocol.durationDays, errors);
   }
 
+  validateProtocolChallengeCoverage(protocol, challenges, errors);
+
   return { valid: errors.length === 0, errors };
 }
 
@@ -293,7 +362,10 @@ export function validateProtocol(protocol: Protocol): ProtocolValidationResult {
  * @param protocols - Array of Protocol records to validate.
  * @returns A ProtocolValidationResult aggregating all errors across the collection.
  */
-export function validateProtocolCollection(protocols: Protocol[]): ProtocolValidationResult {
+export function validateProtocolCollection(
+  protocols: Protocol[],
+  challenges: Challenge[]
+): ProtocolValidationResult {
   const allErrors: ProtocolValidationError[] = [];
 
   const seen = new Map<string, number>();
@@ -312,7 +384,7 @@ export function validateProtocolCollection(protocols: Protocol[]): ProtocolValid
   });
 
   protocols.forEach((protocol) => {
-    const result = validateProtocol(protocol);
+    const result = validateProtocol(protocol, challenges);
     allErrors.push(...result.errors);
   });
 
